@@ -656,7 +656,7 @@ class CICE:
         self.rose_cice=main_config['user']['job_path']+'app/nemo_cice/rose-app.conf'
         self.rose,self.rose_header=self.read_rose_app_conf(self.rose_cice)
         self.missing=[] # list of diagnostics we failed to add!
-
+        self.added=[]#list of added diagnostics
     
     def read_rose_app_conf(self,file):
         config = configparser.ConfigParser() 
@@ -705,10 +705,12 @@ class CICE:
               #if diag_freq is just 'x' we replace with this_freq
               if "x" in diag_freq:
                  diag_freq=this_freq
+                 self.added.append(diag)
               else:
                  #otherwise, we need to add the new freq to the string (making sure it is surrounded by '  ')
                  diag_freq=(diag_freq+this_freq).replace("\'\'","")
                  this_section[fdiag]=diag_freq
+                 self.added.append(diag)
                  #overwrite this_section in the ice dict
                  self.rose['namelist:icefields_nml']=this_section
               #is diag_freq already set in the histfreq section of setup_nml?
@@ -1382,9 +1384,11 @@ for line in variable_list:
         print(line['realm'])
         import pdb; pdb.set_trace()
 
-plog(bold("Missing UM diagnostics: "+' '.join(um.missing)))
-plog(bold("Missing Nemo diagnostics: "+' '.join(nemo.missing)))
-plog(bold("Missing CICE diagnostics: "+' '.join(cice.missing)))
+plog(bold("UM diagnostics unable to add: "+' '.join(um.missing)))
+plog(bold("Nemo diagnostics unable to add: "+' '.join(nemo.missing)))
+plog(bold("CICE diagnostics unable to add: "+' '.join(cice.missing)))
+
+plog(bold("CICE diagnostics added: "+' '.join(cice.added)))
 
 #write diagnostics definition files
 #extract job name from filename
