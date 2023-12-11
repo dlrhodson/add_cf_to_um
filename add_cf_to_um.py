@@ -48,6 +48,7 @@ class UM:
         #and sets up all mappings
 
         self.missing=[] # list of diagnostics we failed to add!
+        self.added=[] # list of diagnostics we succeeded in adding!
         self.umOrXIOS=umOrXIOS
         self.default_usage={'mon':"'UPM'",
                             'day':"'UPD'"
@@ -460,7 +461,7 @@ class UM:
         #print(dims,this_space)
         for stash_code in req_stash:
            self.add_stash(stash_code,freq,dimensions)
-
+           
 
            
     def rose_get_dom_level(self,dom_name):
@@ -627,6 +628,7 @@ class UM:
                        }
             self.rose[namelist_name]=new_stash
             plog("Added new stash entry for "+stash_code+" to ROSE")
+            self.added.append(stash_code)
             #logging.info('Added '+stash_code+' using '+time_domain+' '+spatial_domain+' '+usage)
         return(stash_found)
 
@@ -845,6 +847,7 @@ class Nemo:
 
         self.freq_map={'mon':'1mo', 'day':'1d'}
         self.missing=[] # list of diagnostics we failed to add!
+        self.added=[] # list of diagnostics we succesfully to added!
 
         self.ocean_diag=[]
         self.ocean_diag_filename=''
@@ -1011,6 +1014,7 @@ class Nemo:
                 new_file_element.text=parent.text
                 plog("Adding "+diag+" to "+file_id)
                 new_file_element.append(deepcopy(field))
+                self.added.append(diag)
                 print("Done")
                 return()
 
@@ -1022,6 +1026,7 @@ class Nemo:
                     #found the grid
                     #this file is the correct place to add the diagnostic
                     plog("copying "+diag+" to "+file.attrib['id'])
+                    self.added.append(diag)
                     file.append(deepcopy(fields[0]))
                     return()
 
@@ -1175,6 +1180,7 @@ class Nemo:
                 new_file_element.text="\n"
                 plog("Adding "+diag+" to "+file_id)
                 new_file_element.append(deepcopy(field))
+                self.added.append(diag)
                 print("Done")
                 return()
         #here - there are multiple files in this fille_group for the chosen output freq
@@ -1387,7 +1393,9 @@ for line in variable_list:
 plog(bold("UM diagnostics unable to add: "+' '.join(um.missing)))
 plog(bold("Nemo diagnostics unable to add: "+' '.join(nemo.missing)))
 plog(bold("CICE diagnostics unable to add: "+' '.join(cice.missing)))
-
+print("----------------------")
+plog(bold("UM diagnostics added: "+' '.join(um.added)))
+plog(bold("NEMO diagnostics added: "+' '.join(nemo.added)))
 plog(bold("CICE diagnostics added: "+' '.join(cice.added)))
 
 #write diagnostics definition files
