@@ -1282,7 +1282,8 @@ def start_logging():
         log_file=main_config['user']['log_file'].strip("'")
     else:
         log_file='cf_to_um.log'    
-    logging.basicConfig(filename=log_file, encoding='utf-8', level=logging.INFO, filemode='w')
+    #logging.basicConfig(filename=log_file, encoding='utf-8', level=logging.INFO, filemode='w')
+    logging.basicConfig(filename=log_file, level=logging.INFO, filemode='w')
     print("Writing log to "+log_file)
 
 def check_stash_eq(um,nemo):
