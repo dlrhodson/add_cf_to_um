@@ -730,11 +730,9 @@ class CICE:
                  if not found:
                     print('no space for addditional CICE diag frequency!')
                     import pdb; pdb.set_trace()
-                 print("HERE")
                  setup['histfreq']=','.join(histfreq)
                  setup['histfreq_n']=','.join(histfreq_n)
                  self.rose['namelist:setup_nml']=setup
-                 import pdb; pdb.set_trace()
 
            else:
               plog(diag+" is already output at "+freq)
