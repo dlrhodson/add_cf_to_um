@@ -619,7 +619,7 @@ class UM:
             hex_uuid = format(int(uuid.uuid4().hex[:8], 16), 'x')
 
             #namelist_name="[!namelist:umstash_streq("+isec+item+"_"+hex_uuid+")]"
-            namelist_name="!namelist:umstash_streq("+isec+item+"_"+hex_uuid+")"
+            namelist_name="namelist:umstash_streq("+isec+item+"_"+hex_uuid+")"
             new_stash={'dom_name':spatial_domain,
                        'isec':isec1,
                        'item':item1,
