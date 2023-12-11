@@ -769,7 +769,7 @@ class CICE:
 
         else:
           
-           if diag in self.cice_diagnostics:
+           if 'f_'+diag in self.cice_diagnostics:
               plog(diag+" not in the current CICE diag namelist - adding")
               import pdb; pdb.set_trace()
 
