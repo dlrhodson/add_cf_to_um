@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 #this script extracts the files required by add_cf_to_um from code.metoffice.gov.uk
 #need to use FCM and be connected to MOSRS
 #Probably by being logged into PUMA!
