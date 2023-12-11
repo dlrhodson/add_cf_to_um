@@ -15,6 +15,6 @@ AD/etc/stash/STASHmaster/STASHmaster_A
 fcm export https://code.metoffice.gov.uk/svn/nemo/branches/UKMO/dev_r5518_GO6_package/NEMOGCM/CONFIG/SHARED/field_def.xml
 #field_def.xml has an error in the XML - a comment includes "<20cm" which confuses the XML parser                          
 #replace "<" with "&lt;" - the correct XML representation of "<"                                                           
-sed -i 's/\<20cm/\&lt\;20cm/g' field_def.xml
+sed -i 's/<20cm/\&lt\;20cm/g' field_def.xml
 
 
