@@ -17,4 +17,5 @@ fcm export https://code.metoffice.gov.uk/svn/nemo/branches/UKMO/dev_r5518_GO6_pa
 #replace "<" with "&lt;" - the correct XML representation of "<"                                                           
 sed -i 's/<20cm/\&lt\;20cm/g' field_def.xml
 
-
+#file for that defines all the available ice diagnostics
+fcm export https://code.metoffice.gov.uk/svn/cice/main/branches/pkg/Config/vn5.1.2_GSI8.1_package_branch/cice/source/ice_history_shared.F90 

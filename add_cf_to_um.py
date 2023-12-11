@@ -656,10 +656,35 @@ class CICE:
         
         #self.read_rose_app_conf(file+'/'+ice_conf)
         self.rose_cice=main_config['user']['job_path']+'app/nemo_cice/rose-app.conf'
+        self.cice_diagnostics_file=main_config['main']['cice_diags']
         self.rose,self.rose_header=self.read_rose_app_conf(self.rose_cice)
         self.missing=[] # list of diagnostics we failed to add!
         self.added=[]#list of added diagnostics
-    
+
+        self.cice_diagnostics=self.read_cice_diagnostics(self.cice_diagnostics_file)
+        
+
+    def read_cice_diagnostics(self,file):
+       #file='ice_history_shared.F90'
+
+       namelist=False
+       with open(file, 'r') as infile:
+          lines=infile.readlines()
+          cice_diagnostics=[]
+          for line in lines:
+             if namelist:
+                cice1=line.replace(' ','').replace('\t','').replace('\n','').split(',')
+                cice2=[i for i in cice1 if not '&' in i and not '!' in i]
+                cice_diagnostics.extend(cice2)
+                if not '&' in line:
+                   namelist=False
+             if 'icefields_nml' in line and 'namelist' in line:
+                print(line)
+                namelist=True
+       return(cice_diagnostics)
+
+  
+        
     def read_rose_app_conf(self,file):
         config = configparser.ConfigParser() 
         configFilePath = file
@@ -743,8 +768,14 @@ class CICE:
               
 
         else:
-           plog(bold(diag+" not found - SKIPPING"))
-           self.missing.append(diag)
+          
+           if diag in self.cice_diagnostics:
+              plog(diag+" not in the current CICE diag namelist - adding")
+              import pdb; pdb.set_trace()
+
+           else:
+              plog(bold(diag+" not found - SKIPPING"))
+              self.missing.append(diag)
        
 
         return()
