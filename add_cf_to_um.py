@@ -739,7 +739,8 @@ class CICE:
                  this_section[fdiag]=diag_freq
                  self.added.append(diag)
                  #overwrite this_section in the ice dict
-                 self.rose['namelist:icefields_nml']=this_section
+                 #we don't need to do this, as this_section already is a reference to self.rose['namelist:icefields_nml']
+                 #self.rose['namelist:icefields_nml']=this_section
               #is diag_freq already set in the histfreq section of setup_nml?
               setup=self.rose['namelist:setup_nml']
               histfreq=setup['histfreq'].split(',')
@@ -761,7 +762,8 @@ class CICE:
                     import pdb; pdb.set_trace()
                  setup['histfreq']=','.join(histfreq)
                  setup['histfreq_n']=','.join(histfreq_n)
-                 self.rose['namelist:setup_nml']=setup
+                 #also don;t need to do this!
+                 #self.rose['namelist:setup_nml']=setup
 
            else:
               plog(diag+" is already output at "+freq)
