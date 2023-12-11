@@ -672,7 +672,82 @@ class CICE:
 
 
     
+
     def addIceDiag(self,line):
+        diag=line['variable']
+        freq=line['time']
+        dims=line['space']
+
+        print("")
+
+        print("-------------------------")
+        #plog("Ice: "+diag)
+
+        #check frequency is valid
+        freq_map={'mon':"'m'",'day':"'d'",'hour':"'h'",'timestep':"'1'",'year':"'y'"}
+        if not freq in freq_map:
+            print("unknown output frequency"+freq+' '+diag)
+            import pdb; pdb.set_trace()
+        this_freq=freq_map[freq]
+
+        
+        #is this a valid CICE diagnostics?
+        
+
+        fdiag='f_'+diag
+        this_section=self.rose['namelist:icefields_nml']
+        if fdiag in this_section:
+           #this IS a valid CICE diagnostic
+
+           diag_freq=this_section[fdiag]
+           if not this_freq in diag_freq:
+              plog(diag+" not currently output at "+freq+" - adding..")
+              #if diag_freq is just 'x' we replace with this_freq
+              if "x" in diag_freq:
+                 diag_freq=this_freq
+              else:
+                 #otherwise, we need to add the new freq to the string (making sure it is surrounded by '  ')
+                 diag_freq=(diag_freq+this_freq).replace("\'\'","")
+                 this_section[fdiag]=diag_freq
+                 #overwrite this_section in the ice dict
+                 self.rose['namelist:icefields_nml']=this_section
+              #is diag_freq already set in the histfreq section of setup_nml?
+              setup=self.rose['namelist:setup_nml']
+              histfreq=setup['histfreq'].split(',')
+              histfreq_n=setup['histfreq_n'].split(',')
+              #is the output frequency for this diagnostic already present in the histfreq variable?
+              if not this_freq in histfreq:
+                 #no - so we need to add it to the next available slot
+                 plog(this_freq+' not in current histfreq: '+','.join(histfreq))
+                 found=False
+                 for i in range(len(histfreq)):
+                    if histfreq[i]=="'x'":
+                       histfreq[i]=this_freq
+                       #we also need to add how often this frequency needs to be output
+                       histfreq_n[i]='1'
+                       found=True
+                       break
+                 if not found:
+                    print('no space for addditional CICE diag frequency!')
+                    import pdb; pdb.set_trace()
+                 print("HERE")
+                 setup['histfreq']=','.join(histfreq)
+                 setup['histfreq_n']=','.join(histfreq_n)
+                 self.rose['namelist:setup_nml']=setup
+                 import pdb; pdb.set_trace()
+
+           else:
+              plog(diag+" is already output at "+freq)
+              
+
+        else:
+           plog(bold(diag+" not found - SKIPPING"))
+           self.missing.append(diag)
+       
+
+        return()
+     
+    def addIceDiag_old(self,line):
         diag=line['variable']
         freq=line['time']
         dims=line['space']
