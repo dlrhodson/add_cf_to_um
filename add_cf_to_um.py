@@ -182,7 +182,7 @@ class UM:
         configFilePath = main_config['main']['mappings']
         if ',' in configFilePath:
            #this contains multiple config files, split into a list
-           configFilePaths=split(',',configFilePath)
+           configFilePaths=configFilePath.split(',')
            for path in configFilePaths:
               if not os.path.isfile(path):
                  print("ROSE conf file "+path+" does not exist")
