@@ -183,8 +183,12 @@ class UM:
         if not os.path.isfile(configFilePath):
            print("ROSE conf file "+configFilePath+" does not exist")
            exit()
- 
-        self.cf_to_stash.read(configFilePath)
+        if ',' in configFilePath:
+           #this contains multiple config files, split into a list
+           configFilePaths=split(',',configFilePath)
+           self.cf_to_stash.read(configFilePaths)
+        else:
+           self.cf_to_stash.read(configFilePath)
         return()
 
 
@@ -560,7 +564,9 @@ class UM:
         stash_found=False
         time_found=False
         space_found=False
+        #extract all the umstash requests from rose 
         stash_c= [key for key in self.rose.sections() if re.search('umstash_streq', key)]
+        #loop over all these and see if one matches the stash id we require at the same freq output and domain
         for req in stash_c:
             this_stash=self.rose[req]
             #if the isec and item match and this is the atmospher (model=01)
@@ -576,6 +582,7 @@ class UM:
                     #logging.info(stash_code+" already exists at "+time_domain+" and "+spatial_domain)
                     break
 
+        #if the stash was found, it already exists, so we don't need to do anything - otherwise..
         if not stash_found:
             #stash code not found in rose with correct time and space domain:
             print("Need to add stash code")
@@ -613,6 +620,7 @@ class UM:
                 usage=self.use_matrix[time_domain][spatial_domain][0]
 
             plog("Will use "+usage+" as the usage")
+
             #print(oft)
             #logging.info(oft)
             isec1=isec.lstrip('0') if isec!='00' else '0'
