@@ -180,14 +180,19 @@ class UM:
         self.cf_to_stash.optionxform = lambda option: option
         #configFilePath = 'common_mappings.cfg'
         configFilePath = main_config['main']['mappings']
-        if not os.path.isfile(configFilePath):
-           print("ROSE conf file "+configFilePath+" does not exist")
-           exit()
         if ',' in configFilePath:
            #this contains multiple config files, split into a list
            configFilePaths=split(',',configFilePath)
+           for path in configFilePaths:
+              if not os.path.isfile(path):
+                 print("ROSE conf file "+path+" does not exist")
+                 exit()
+
            self.cf_to_stash.read(configFilePaths)
         else:
+           if not os.path.isfile(configFilePath):
+              print("ROSE conf file "+configFilePath+" does not exist")
+              exit()
            self.cf_to_stash.read(configFilePath)
         return()
 
