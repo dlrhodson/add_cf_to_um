@@ -6,6 +6,7 @@
 #Dan Hodson
 #extract the common cf->stash mappings from the mip_convert tool in CDDS                                                   
 fcm export fcm:cdds.x-tr/mip_convert/mip_convert/process/common_mappings.cfg
+fcm export fcm:cdds.x-tr/mip_convert/mip_convert/process/HadGEM3_mappings.cfg
 #extract the default UM stash from u-bg466 - GC3,1 CMIP6 Hist run                                                          
 fcm export https://code.metoffice.gov.uk/svn/roses-u/b/g/4/6/6/trunk/app/um/rose-app.conf rose-app.conf.bg466
 #extract the standard STASHMASTER_A file for the UM from umv10.7 as used by bg466                                          
