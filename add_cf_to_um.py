@@ -77,6 +77,8 @@ class UM:
         self.stash_levels={}
         #Stash mapping
         self.stashMap = configparser.ConfigParser()  
+        #turn of the lowercaseization of keys
+        self.stashMap.optionxform = lambda option: option
         self.configFilePath = main_config['main']['mappings']
         #stashMap.read(configFilePath)
 
@@ -174,6 +176,8 @@ class UM:
         
     def read_stash_mappings(self):
         self.cf_to_stash = configparser.ConfigParser()   
+        #turn of the lowercaseization of keys
+        self.cf_to_stash.optionxform = lambda option: option
         #configFilePath = 'common_mappings.cfg'
         configFilePath = main_config['main']['mappings']
         if not os.path.isfile(configFilePath):
@@ -187,6 +191,8 @@ class UM:
         
     def read_rose_app_conf(self,file):
         config = configparser.ConfigParser() 
+        config.optionxform = lambda option: option
+        
         configFilePath = file
         #sometimes the first line is NOT a section header, but some other string!
         #test if this is true, if so, extract this header
@@ -687,7 +693,9 @@ class CICE:
   
         
     def read_rose_app_conf(self,file):
-        config = configparser.ConfigParser() 
+        config = configparser.ConfigParser()
+        #turn of the lowercaseization of keys
+        config.optionxform = lambda option: option
         configFilePath = file
         #Need to do this as the header in rose-app.conf files doesn't have a [DEFAULT] section heading
         header_flag=True
@@ -915,8 +923,9 @@ class Nemo:
         
     def read_rose_app_conf(self,file):
         #read in NEMO configuration XML
-        #
         config = configparser.ConfigParser() 
+        #turn of the lowercaseization of keys
+        config.optionxform = lambda option: option
         configFilePath = file
         if not os.path.isfile(file):
             print("ROSE conf file "+file+" does not exist")
@@ -1316,6 +1325,8 @@ def read_config(conf_file):
         exit()
 
     main_config = configparser.ConfigParser()   
+    #turn of the lowercaseization of keys
+    main_config.optionxform = lambda option: option
     main_config.read(conf_file)
     return(main_config)
 
