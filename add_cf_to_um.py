@@ -61,6 +61,7 @@ class UM:
         self.space_mappings={'longitude latitude time':"'DIAG'",
                              'longitude latitude height2m time':"'DIAG'",
                              'longitude latitude height10m time':"'DIAG'",
+                             'longitude latitude typesi time':"'DIAG'",  
                              'longitude latitude alevel time':"'DALLTH'",
                              'longitude latitude alevhalf time':"'DALLRH'",
                              'longitude latitude plev8 time':"'PLEV8'",
@@ -174,6 +175,7 @@ class UM:
                 print("Or a new xios_stream that you want to define")
                 exit()
              else:
+                
                 #OK so we have a usage mapping!
                 #remove ' just in case
                 use_stream=usage_section[use.replace("'","")]
@@ -191,6 +193,7 @@ class UM:
                       #check we don't already use the filename_base
                       this_xios_stream=xios_config_map[use_stream]
                       this_filename_base=main_config[this_xios_stream]['filename_base'].replace("'","")
+
                       if this_filename_base in self.xios_stream_filename_bases:
                          print("Oh - the filename base name for the new xios_stream ("+this_filename_base+") is already used by another xios stream!")
                          print("Existing stream base names are:")
@@ -942,7 +945,12 @@ class CICE:
         return(config,header)
 
 
-    
+    def contains_operators(self,input_string):
+       operators = set("*+-/")
+
+       # Check if any of the special characters are in the string
+       return any(i in operators for i in input_string)
+
 
     def addIceDiag(self,line):
         diag=line['variable']
@@ -965,7 +973,56 @@ class CICE:
         #is this a valid CICE diagnostics?
         
 
-        fdiag='f_'+diag
+
+        #is this diag in the cf mapping tables?
+        if not diag in um.cf_to_stash:
+           #No - so let's guess it is like the CICE diags
+           fdiag='f_'+diag
+        else:
+           #OK attempt to extract
+           this_map=um.cf_to_stash[diag]
+           this_expression=this_map['expression']
+           pattern = r'm\d{2}s\d{2}i\d{3}\[.*?\]'
+           matches = re.findall(pattern, this_expression)
+           if len(matches)>0:
+              #Aha - this IS a sea ice diagnostics, but the mapping files use atmosphere diagnostics to build in
+              #So call the UM diagnostics function, and then return
+              print("We need to add UM diagnostics for this "+diag+" CICE diagnostic!")
+              um.add_cf_diagnostic(line)
+              print("Done")
+              return()
+           else:
+              if self.contains_operators(this_expression):
+                 #This is some expression involving CONSTANTS (upper case) diagnostics (lower case), operators (*+.-) and brackets
+                 #e.g. ((meltt + meltb + meltl - congel - frazil) * ICE_DENSITY + melts * SNOW_DENSITY) / (100. * SECONDS_IN_DAY * aice) * REF_SALINITY / 1000.
+                 # we need to extract JUST the diagnostics
+                 translation_table = str.maketrans("", "", "*+-/().0123456789_ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+                 #strip out all operators, numbers and upper case characters
+                 sub_diag_string=this_expression.translate(translation_table)
+                 #split into a list of diagnostics
+                 sub_diags=list(filter(None, sub_diag_string.split()))
+                 if len(sub_diags)==0:
+                    print("something went wrong - mapping expression failed!")
+                    import pdb; pdb.set_trace()
+                 elif len(sub_diags)>1:
+                    print(diag+" maps to more than one ice diagnostic - loop over these")
+                    for sub_diag in sub_diags:
+                       #call this method again
+                       #take a copy of line
+                       new_line=dict(line)
+                       #swap variable
+                       new_line['variable']=sub_diag
+                       #call addIceDiag again
+                       print("Adding "+sub_diag)
+                       self.addIceDiag(new_line)                       
+                    print("Done")
+                    return()
+                 else:
+                    fdiag='f_'+sub_diags[0]
+              else:
+                 fdiag='f_'+this_expression
+           
+
         this_section=self.rose['namelist:icefields_nml']
         if fdiag in this_section:
            #this IS a valid CICE diagnostic
@@ -1015,7 +1072,7 @@ class CICE:
 
         else:
           
-           if 'f_'+diag in self.cice_diagnostics:
+           if fdiag in self.cice_diagnostics:
               plog(diag+" not in the current CICE diag namelist - adding")
               import pdb; pdb.set_trace()
 
@@ -1068,6 +1125,8 @@ class CICE:
             setup['histfreq_n']=','.join(histfreq_n)
             self.rose['namelist:setup_nml']=setup
 
+        import pdb; pdb.set_trace()
+        this_map=um.cf_to_stash[diag]
         fdiag='f_'+diag
         this_section=self.rose['namelist:icefields_nml']
         if fdiag in this_section:
