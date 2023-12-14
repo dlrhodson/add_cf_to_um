@@ -70,6 +70,10 @@ class UM:
                              'longitude latitude sdepth1 time':"'DSOIL1'"
                              }
 
+        self.xios_stream_ids=[]
+        self.xios_stream_filename_bases=[]
+        self.cmip6_use_mappings={}
+        self.use_list=[]
         self.cf_to_stash={}
         self.rose_time_domain_mappings={}
         self.rose_space_domain_mappings={}
@@ -99,9 +103,25 @@ class UM:
         self.rose,self.rose_header=self.read_rose_app_conf(self.rose_stash)
         #rose,rose_header=self.read_rose_app_conf(rose_stash)
         #CMIP6 map
+
+
+        if umOrXIOS=='xios': 
+           #read in all the existing xios stream definitions
+           self.get_xios_streams()
+        else:
+           print("UM- need to add the USAGE stream handler!")
+           import pdb; pdb.set_trace()
+
+
         cmip6_rose=main_config['main']['cmip6']
         #read in standard CMIP6 time and spatial domain definitions
         self.cmip6,self.cmip6_header=self.read_rose_app_conf(cmip6_rose)
+
+        #get list of usages in ROSE -> use_list
+        self.get_use_list()
+        #get a dict of mappings of UPX->umstash_use()
+        self.get_cmip6_use_mappings()
+        
         #matrix mapping time and space to USAGE for output
         self.get_use_matrix()
 
@@ -120,6 +140,161 @@ class UM:
         
         #Now rose should have all the required time and space domains defined as in the freq_mappings and space_mappings
 
+
+    def check_use_already_exists(self,use):
+       
+       #check to ensure that this_use exists and points to an output stream - if not TAKE ACTION!
+       if not use in self.use_list:
+          print(use+" does not already exist in ROSE")
+          if not 'usage' in main_config:
+             print("No [usage] section in "+conf_file)
+             print("Please add the following to "+conf_file+" and then re-run ")
+             print()
+             print("[usage]")
+             print(use.replace("'","")+"=<xios_stream_reference>")
+             print()
+             print("Where <xios_stream_reference> is either one of the following existing xios streams:")
+             for i in self.xios_stream_ids:
+                      print(i)
+             print()
+             print("Or a new xios_stream that you want to define")
+             exit()
+          else:
+             usage_section=main_config['usage']
+             #remove ' just in case
+             if not use.replace("'","") in usage_section:
+                print("[usage] section exists in "+conf_file+ " but no usage stream mapping defined for "+use+" in this [usage] section")
+                print("Please add a use mapping to the [usage] section - something like:")
+                print(use.replace("'","")+"=<xios_stream_reference>")
+                print()
+                print("Where <xios_stream_reference> is either one of the following existing xios streams:")
+                for i in self.xios_stream_ids:
+                   print(i)
+                print()
+                print("Or a new xios_stream that you want to define")
+                exit()
+             else:
+                #OK so we have a usage mapping!
+                #remove ' just in case
+                use_stream=usage_section[use.replace("'","")]
+                #does this stream already exist?
+                if not use_stream in self.xios_stream_ids:
+                   print(use_stream+" does not exist in the existing output streams ")
+
+                   #do we have this stream defined in the confi?
+                   xios_config=[key for key in main_config if 'xios_streams' in key]
+                   xios_config_map={}
+                   for key in xios_config:
+                      xios_config_map[main_config[key]['file_id'].replace("'","")]=key
+                   if use_stream in xios_config_map:
+                      plog("Aha - I see we have "+use_stream+" defined in "+conf_file)
+                      #check we don't already use the filename_base
+                      this_xios_stream=xios_config_map[use_stream]
+                      this_filename_base=main_config[this_xios_stream]['filename_base'].replace("'","")
+                      if this_filename_base in self.xios_stream_filename_bases:
+                         print("Oh - the filename base name for the new xios_stream ("+this_filename_base+") is already used by another xios stream!")
+                         print("Existing stream base names are:")
+                         for i in self.xios_stream_filename_bases:
+                            print(i)
+                         print("Please change this and rerun")
+                         exit()
+                      else:
+                         #Everthing OK - we now need to add the XIOS stream to ROSE
+                         plog("Adding "+use_stream+" to ROSE")
+                         self.add_new_xios_stream(this_xios_stream)
+                         #and the USAGE
+                         plog("Adding "+use+" to ROSE")
+                         self.add_new_usage(use,use_stream)
+                         print("DONE")
+                         return()
+                         
+                   else:
+                      for i in self.xios_stream_ids:
+                         print(i)
+                      
+                      print("Please either adjust this to an existing output stream - or add an xios stream definition section to "+conf_file+". Something like")
+                      print()
+                      print("[namelist:xios_streams("+use_stream+")]")
+                      print("compression_level = 0")
+                      print("file_id = '"+use_stream+"'")
+                      print("""!!filename = ''
+filename_base = './${RUNID}a_mon_'
+l_reinit = .true.
+output_freq_unit = 4
+output_freq_value = 1
+reinit_end = -1
+reinit_start = 0
+reinit_step = 1
+reinit_unit = 4
+time_counter = centered_exclusive
+time_stamp_name = 'creation_date'
+timeseries = none
+!!ts_prefix = ''
+!!use_ts_prefix = .false.
+uuid_name = 'tracking_id'
+                   """)
+                      import pdb; pdb.set_trace()
+
+                      exit()
+                else:
+                   plog("using mapping for "+use+" in "+conf_file)
+                   plog(use+"->"+use_stream)
+                   #use stream mapping exists! Add New usage and stream
+                   self.add_new_usage(use,use_stream)
+                   return()
+                import pdb; pdb.set_trace()
+       else:
+          #this use already exists in the use list - do nothing
+          return()
+       
+    def add_new_xios_stream(self,xios):
+       #link the new xios stream into ROSE
+       self.rose[xios]=main_config[xios]
+
+
+          
+    def add_new_usage(self,use,use_stream):
+       #creates a new use mapping and adds to ROSE
+       print("Creating new usage "+use+" using "+use_stream)
+       if not "'" in use_stream:
+          #use_stream should be e.g "'xios_upm_1m'"
+          #add single quote around, if required
+          use_stream="'"+use_stream+"'"
+       
+       # Convert the UUID to an 8-digit hexadecimal representation
+       hex_uuid = format(int(uuid.uuid4().hex[:8], 16), 'x')
+       umstash_use="namelist:umstash_use("+use.replace("'","").lower()+"_"+hex_uuid+")"
+       self.rose[umstash_use]={'file_id':use_stream,'locn':3,'macrotag':0,'use_name':use}
+       print("Adding to use_list")
+       self.use_list.append(use)
+       print("Done")
+
+          
+    def get_xios_streams(self):
+       #extracts all the xios_stream file_id s to self.xios_strea_ids
+       xios_stream_keys=[key for key in self.rose.keys() if 'xios_streams' in key]
+       for key in xios_stream_keys:
+          xios_stream=self.rose[key]
+          xios_stream_name=xios_stream['file_id'].replace("'","")
+          xios_stream_filename_base=xios_stream['filename_base'].replace("'","")
+          self.xios_stream_ids.append(xios_stream_name)
+          self.xios_stream_filename_bases.append(xios_stream_filename_base)
+          
+       
+       
+           
+    def create_new_file_id(self):
+       #creates a new File ID for STASH output
+       #read in existing files output file stream and assign a new one
+       #or many read in definition from the config file?
+       #####HERE
+       #where are the current list fo XIOS files held?
+       #xml/rose-app.conf - I think
+       #xios_streams
+       import pdb; pdb.set_trace()
+
+       return("'NEW'")
+    
 
     def read_STASHmaster_A_levels(self):
         file=main_config['main']['stashmaster_A']
@@ -222,7 +397,17 @@ class UM:
         return(config,header)
 
 
-    
+    def get_use_list(self):
+        rose_use_keys=[key for key in self.rose.keys() if 'umstash_use' in key]
+        for key in rose_use_keys:
+            self.use_list.append(self.rose[key]['use_name'])
+
+    def get_cmip6_use_mappings(self):
+        cmip6_use_keys=[key for key in self.cmip6.keys() if 'umstash_use' in key]
+        for key in cmip6_use_keys:
+            self.cmip6_use_mappings[self.cmip6[key]['use_name']]=key
+                                    
+        
     def get_time_mappings(self):
         #loop over all freq_mappings
         #get all time domain keys for cmip6
@@ -293,18 +478,54 @@ class UM:
                    if this_time==this_cmip6['tim_name']:
                       this_domain=this_cmip6_variable['dom_name']
                       this_use=this_cmip6_variable['use_name']
+                   
                       if not this_time in self.use_matrix:
                          #time not already in use matrix - add
                          self.use_matrix[this_time]={this_domain:[this_use]}
+                         self.check_use_already_exists(this_use)
+                         #if not this_use in self.use_list:
+                         #this usage does not exist in ROSE
+                         #   print("FLOSH")
+                         #   print("copying usage "+this_use+" to ROSE")
+                         #   #copy usage with name this_use from CMIP6
+                         #   new_use=self.cmip6[self.cmip6_use_mappings[this_use]]
+                         #   #create a consistent new file id for this usage
+                         #   new_use['file_id']=self.create_new_file_id()
+                         #   #copy reference to this usage to ROSE
+                         #   self.rose[self.cmip6_use_mappings[this_use]]=new_use
+                         #   
+                         #   import pdb; pdb.set_trace()
+                         #   #####HEEEREE
                       else:#
                          if this_domain in self.use_matrix[this_time]:
                             #this domain already exist here
                             if not this_use in self.use_matrix[this_time][this_domain]:
                                #only add if this use isn't already in the list
                                self.use_matrix[this_time][this_domain].append(this_use)
+                               check_use_already_exists(this_use)
+                               if not this_use in self.use_list:
+                                  print("FISH")
+                                  #this usage does not exist in ROSE
+                                  print("copying usage "+this_use+" to ROSE")
+                                  import pdb; pdb.set_trace()
+                                  #####HEEEREE
                          else:
                             #domain not here yet
                             self.use_matrix[this_time][this_domain]=[this_use]
+                            #check to ensure that this_use exists and points to an output stream - if not TAKE ACTION!
+                            self.check_use_already_exists(this_use)
+                            if not this_use in self.use_list:
+                               print("HELLO")
+                               #this usage does not exist in ROSE
+                               print("copying usage "+this_use+" to ROSE")
+                               #copy usage with name this_use from CMIP6
+                               new_use=self.cmip6[self.cmip6_use_mappings[this_use]]
+                               #create a consistent new file id for this usage
+                               new_use['file_id']=create_new_file_id()
+                               #copy reference to this usage to ROSE
+                               self.rose[self.cmip6_use_mappings[this_use]]=new_use
+                               import pdb; pdb.set_trace()
+                               #####HEEEREE
                 plog(this_time+" added to Use Matrix")
 
 
@@ -326,11 +547,14 @@ class UM:
         rose_space_keys=[key for key in self.rose.keys() if 'umstash_domain' in key]
 
         #rose_space_mappings={}
+        #loop over all the space mappings (e.g. 'longitude latitude time':"'DIAG'")
+        #make sure that these spatial domains exist in rose, if not -copy across
         for space in self.space_mappings:
             this_space_dom=self.space_mappings[space]
             #loop over all cmip6 space domains
             space_name_found=False
 
+            #loop over all the spatial domains in CMIP6
             for cmip6_space in cmip6_space_keys:
                 this_cmip6=self.cmip6[cmip6_space]
                 #print(this_cmip6['dom_name'])
