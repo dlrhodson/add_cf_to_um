@@ -233,8 +233,6 @@ timeseries = none
 !!use_ts_prefix = .false.
 uuid_name = 'tracking_id'
                    """)
-                      import pdb; pdb.set_trace()
-
                       exit()
                 else:
                    plog("using mapping for "+use+" in "+conf_file)
