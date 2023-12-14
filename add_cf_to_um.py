@@ -1020,7 +1020,12 @@ class CICE:
                  else:
                     fdiag='f_'+sub_diags[0]
               else:
-                 fdiag='f_'+this_expression
+                 if this_expression=="ice_present":
+                    #mappings in common_mappings.cfg is wrong for sitimefrac !
+                    #ice_present in the confing by ice_history_shared.F90 is f_icepresent
+                    fdiag='f_icepresent'
+                 else:
+                    fdiag='f_'+this_expression
            
 
         this_section=self.rose['namelist:icefields_nml']
