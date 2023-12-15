@@ -1,0 +1,9 @@
+[tslsi]
+component = land
+dimension = longitude latitude time
+expression = script(m01s03i316[lbproc=128],m01s00i049[lbtim_ia=240,lbproc=128])
+mip_table_id = day
+reviewer = Nobody
+status = ok
+units = K
+

@@ -141,7 +141,6 @@ class UM:
         
         #Now rose should have all the required time and space domains defined as in the freq_mappings and space_mappings
 
-
     def check_use_already_exists(self,use):
        
        #check to ensure that this_use exists and points to an output stream - if not TAKE ACTION!
@@ -816,12 +815,15 @@ uuid_name = 'tracking_id'
         if not stash_found:
             #stash code not found in rose with correct time and space domain:
             print("Need to add stash code")
+           
+
             #for USAGE - we will pick the FIRST usage in the list from use_matrix[time][space]
             #Does the time_domain exist in the use_matrix?
             if not time_domain in self.use_matrix:
                 print(time_domain+" doesn't exist in the use matrix?")
                 #can we find this time domain in CMIP6?
                 import pdb; pdb.set_trace()
+
                 #what about the spatial_domain?
             elif not spatial_domain in self.use_matrix[time_domain]:
                 plog(spatial_domain+" doesn't exist in the use matrix?")
@@ -833,6 +835,12 @@ uuid_name = 'tracking_id'
                     #there is!
                     usage=self.default_usage[time_domain_cf]
                     plog("using the default usage for "+time_domain+" of "+usage)
+                    #check that this default usage actually exists in rose_conf - if not - take action!
+                    self.check_use_already_exists(usage)
+                    
+                    #Can't assume that all STASH have "UPD" defined as ann output stream
+                    #
+
                     #print(oft)
                     #logging.info(oft)
                 else:
@@ -871,6 +879,7 @@ uuid_name = 'tracking_id'
                        'tim_name':time_domain,
                        'use_name':usage
                        }
+
             self.rose[namelist_name]=new_stash
             plog("Added new stash entry for "+stash_code+" to ROSE")
             self.added.append(stash_code)
