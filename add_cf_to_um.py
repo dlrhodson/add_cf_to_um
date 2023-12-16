@@ -875,7 +875,7 @@ uuid_name = 'tracking_id'
             new_stash={'dom_name':spatial_domain,
                        'isec':isec1,
                        'item':item1,
-                       'package':'EXTRA',
+                       'package':"'EXTRA'",
                        'tim_name':time_domain,
                        'use_name':usage
                        }
