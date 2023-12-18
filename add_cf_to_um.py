@@ -801,7 +801,6 @@ uuid_name = 'tracking_id'
             #if the isec and item match and this is the atmospher (model=01)
             if (this_stash['isec'].zfill(2)==isec) and (this_stash['item'].zfill(3)==item) and model=='01':
 
-
                 this_space=this_stash['dom_name']
                 this_time=this_stash['tim_name']
                 #does this stash have the required space and time domain?
@@ -873,6 +872,7 @@ uuid_name = 'tracking_id'
             #namelist_name="[!namelist:umstash_streq("+isec+item+"_"+hex_uuid+")]"
             namelist_name="namelist:umstash_streq("+isec+item+"_"+hex_uuid+")"
             new_stash={'dom_name':spatial_domain,
+                       'ens_name':"''"
                        'isec':isec1,
                        'item':item1,
                        'package':"'EXTRA'",
