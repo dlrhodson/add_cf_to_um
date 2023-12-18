@@ -871,8 +871,9 @@ uuid_name = 'tracking_id'
 
             #namelist_name="[!namelist:umstash_streq("+isec+item+"_"+hex_uuid+")]"
             namelist_name="namelist:umstash_streq("+isec+item+"_"+hex_uuid+")"
+            #Added ens_name here, but maybe this just needs to be added if we are writing to XIOS rather than UM STASH?
             new_stash={'dom_name':spatial_domain,
-                       'ens_name':"''"
+                       'ens_name':"''",
                        'isec':isec1,
                        'item':item1,
                        'package':"'EXTRA'",
