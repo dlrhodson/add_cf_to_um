@@ -139,7 +139,11 @@ class UM:
         #as for time domain, but for space domin
         #self.rose_space_domain_mappings=get_space_mappings(space_mappings)
         self.get_space_mappings()
-        
+
+    def custom_sort(self,item):
+       #custom sort for secton items that should ignore the prefix "!!"
+       return(item.lstrip('!!'))
+
         #Now rose should have all the required time and space domains defined as in the freq_mappings and space_mappings
     def get_uuid_hash(self,section):
        #computes the correct hash for this stash (as in TidyStashValidate in stash_indices.py)
@@ -154,13 +158,14 @@ class UM:
           #this allows us to compare sections that are identical, except for the names
           section_keys=[key for key in section if not key in ['use_name','dom_name','tim_name']]
 
-
-       section_keys.sort()
+       #sort the keys, ignoring the '!!' prefix during the sort
+       section_keys.sort(key=self.custom_sort)
        for key in section_keys:
           text+=key+'='+str(section[key])+'\n'
 
 
        uuid=hashlib.sha1(text.encode(encoding="utf8")).hexdigest()[:8]
+     
        return(uuid)
 
 
