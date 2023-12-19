@@ -165,8 +165,8 @@ class UM:
           this_value=str(section[key]).replace('\n','').replace('=','')
           text+=key+'='+this_value+'\n'
 
-       if 'rlev' in text:
-          import pdb; pdb.set_trace()
+       #if 'rlev' in text:
+       #   import pdb; pdb.set_trace()
 
        uuid=hashlib.sha1(text.encode(encoding="utf8")).hexdigest()[:8]
      
