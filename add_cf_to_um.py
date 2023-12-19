@@ -141,14 +141,23 @@ class UM:
         self.get_space_mappings()
         
         #Now rose should have all the required time and space domains defined as in the freq_mappings and space_mappings
-    def get_uuid_hash(self,stash_entry):
+    def get_uuid_hash(self,section):
        #computes the correct hash for this stash (as in TidyStashValidate in stash_indices.py)
        #NOTE - this currently ONLY works for streq - use and domain will need to have the name fields removed before this is done!
        text=''
-       stash_keys=[key for key in stash_entry]
-       stash_keys.sort()
-       for key in stash_keys:
-          text+=key+'='+stash_entry[key]+'\n'
+       if 'isec' in section:
+          #this must be a streq:
+          section_keys=[key for key in section]
+       else:
+          #must be domain or use or something?
+          #if so, we want to exclude the NAME label from the hash calclation
+          #this allows us to compare sections that are identical, except for the names
+          section_keys=[key for key in section if not section in ['use_name','dom_name','tim_name']]
+          
+
+       section_keys.sort()
+       for key in section_keys:
+          text+=key+'='+str(section[key])+'\n'
 
 
        uuid=hashlib.sha1(text.encode(encoding="utf8")).hexdigest()[:8]
@@ -275,11 +284,15 @@ uuid_name = 'tracking_id'
           #use_stream should be e.g "'xios_upm_1m'"
           #add single quote around, if required
           use_stream="'"+use_stream+"'"
-       
-       # Convert the UUID to an 8-digit hexadecimal representation
-       hex_uuid = format(int(uuid.uuid4().hex[:8], 16), 'x')
+       new_use={'file_id':use_stream,'locn':3,'macrotag':0,'use_name':use}
+       #compute the uuid hash for this usage
+       hex_uuid=self.get_uuid_hash(new_use)
        umstash_use="namelist:umstash_use("+use.replace("'","").lower()+"_"+hex_uuid+")"
-       self.rose[umstash_use]={'file_id':use_stream,'locn':3,'macrotag':0,'use_name':use}
+       self.rose[umstash_use]=new_use
+       
+
+       #hex_uuid = format(int(uuid.uuid4().hex[:8], 16), 'x')
+       
        print("Adding to use_list")
        self.use_list.append(use)
        print("Done")
@@ -480,8 +493,13 @@ uuid_name = 'tracking_id'
                 if self.umOrXIOS=='xios':
                     #this is the XIOS STASH - we need to add the ts_enabled=.false. item
                     cmip6_tim_dom_full['ts_enabled']='.false.'
-                    
-                self.rose[cmip6_time]=cmip6_tim_dom_full
+
+                #the uuid hash for this time may not be the same as if it had been calculated for this version of the UM
+                #so let's recalculate it:
+                this_uuid=self.get_uuid_hash(cmip6_tim_dom_full)
+                cmip6_time_sub=cmip6_time.split('(')
+                cmip6_time_new=cmip6_time_sub[0]+'('+cmip6_time_sub[1].split('_')[0]+'_'+this_uuid+')'
+                self.rose[cmip6_time_new]=cmip6_tim_dom_full
                 self.rose_time_domain_mappings[freq]=this_cmip6['tim_name']
                 #Now need to add this Time domain to the use_matrix
                 print("Now need to add "+this_cmip6['tim_name']+" to the use matrix")
