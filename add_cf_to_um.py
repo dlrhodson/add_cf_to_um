@@ -16,7 +16,7 @@ import configparser
 import argparse
 import hashlib
 import logging
-import uuid
+#import uuid
 import csv
 import sys
 import re
@@ -157,12 +157,15 @@ class UM:
           #if so, we want to exclude the NAME label from the hash calclation
           #this allows us to compare sections that are identical, except for the names
           section_keys=[key for key in section if not key in ['use_name','dom_name','tim_name']]
-
        #sort the keys, ignoring the '!!' prefix during the sort
        section_keys.sort(key=self.custom_sort)
        for key in section_keys:
-          text+=key+'='+str(section[key])+'\n'
+          #sometimes the value can come from a multi-line and may have \n and = - remove these for the uuid hash
+          this_value=str(section[key]).replace('\n','').replace('=','')
+          text+=key+'='+this_value+'\n'
 
+       if 'rlev' in text:
+          import pdb; pdb.set_trace()
 
        uuid=hashlib.sha1(text.encode(encoding="utf8")).hexdigest()[:8]
      
