@@ -508,8 +508,7 @@ uuid_name = 'tracking_id'
                 this_uuid=self.get_uuid_hash(cmip6_tim_dom_full)
                 cmip6_time_sub=cmip6_time.split('(')
                 cmip6_time_new=cmip6_time_sub[0]+'('+cmip6_time_sub[1].split('_')[0]+'_'+this_uuid+')'
-#the uuid hash for this time may not be the same as if it had been calculated for this version of the UM
-                #so let's recalculate it:                self.rose[cmip6_time_new]=cmip6_tim_dom_full
+                self.rose[cmip6_time_new]=cmip6_tim_dom_full
                 self.rose_time_domain_mappings[freq]=this_cmip6['tim_name']
                 #Now need to add this Time domain to the use_matrix
                 print("Now need to add "+this_cmip6['tim_name']+" to the use matrix")
