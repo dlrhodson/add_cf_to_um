@@ -504,7 +504,8 @@ uuid_name = 'tracking_id'
                 this_uuid=self.get_uuid_hash(cmip6_tim_dom_full)
                 cmip6_time_sub=cmip6_time.split('(')
                 cmip6_time_new=cmip6_time_sub[0]+'('+cmip6_time_sub[1].split('_')[0]+'_'+this_uuid+')'
-                self.rose[cmip6_time_new]=cmip6_tim_dom_full
+#the uuid hash for this time may not be the same as if it had been calculated for this version of the UM
+                #so let's recalculate it:                self.rose[cmip6_time_new]=cmip6_tim_dom_full
                 self.rose_time_domain_mappings[freq]=this_cmip6['tim_name']
                 #Now need to add this Time domain to the use_matrix
                 print("Now need to add "+this_cmip6['tim_name']+" to the use matrix")
@@ -632,7 +633,12 @@ uuid_name = 'tracking_id'
                 plog("copying "+this_cmip6['dom_name']+" across from the CMIP6 reference")
                 #logging.info("Adding "+this_cmip6['dom_name']+" across from the CMIP6 reference")
                 #copy across CMIP6 DOMAON
-                self.rose[cmip6_space]=cmip6_space_dom_full
+                #the uuid hash for this domain may not be the same as if it had been calculated for this version of the UM
+                #so let's recalculate it:
+                this_uuid=self.get_uuid_hash(cmip6_space_dom_full)
+                cmip6_space_sub=cmip6_space.split('(')
+                cmip6_space_new=cmip6_space_sub[0]+'('+cmip6_space_sub[1].split('_')[0]+'_'+this_uuid+')'
+                self.rose[cmip6_space_new]=cmip6_space_dom_full
                 self.rose_space_domain_mappings[space]=this_cmip6['dom_name']
             else:
                 #print("Space domain found in Rose")
