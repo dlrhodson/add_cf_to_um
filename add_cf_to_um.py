@@ -14,6 +14,7 @@ from copy import deepcopy
 import lxml.etree as ET
 import configparser
 import argparse
+import hashlib
 import logging
 import uuid
 import csv
@@ -140,7 +141,21 @@ class UM:
         self.get_space_mappings()
         
         #Now rose should have all the required time and space domains defined as in the freq_mappings and space_mappings
+    def get_uuid_hash(self,stash_entry):
+       #computes the correct hash for this stash (as in TidyStashValidate in stash_indices.py)
+       #NOTE - this currently ONLY works for streq - use and domain will need to have the name fields removed before this is done!
+       text=''
+       stash_keys=[key for key in stash_entry]
+       stash_keys.sort()
+       for key in stash_keys:
+          text+=key+'='+stash_entry[key]+'\n'
 
+
+       uuid=hashlib.sha1(text.encode(encoding="utf8")).hexdigest()[:8]
+       return(uuid)
+
+
+       
     def check_use_already_exists(self,use):
        
        #check to ensure that this_use exists and points to an output stream - if not TAKE ACTION!
@@ -867,10 +882,8 @@ uuid_name = 'tracking_id'
 
 
             # Convert the UUID to an 8-digit hexadecimal representation
-            hex_uuid = format(int(uuid.uuid4().hex[:8], 16), 'x')
-
-            #namelist_name="[!namelist:umstash_streq("+isec+item+"_"+hex_uuid+")]"
-            namelist_name="namelist:umstash_streq("+isec+item+"_"+hex_uuid+")"
+            #hex_uuid = format(int(uuid.uuid4().hex[:8], 16), 'x')
+            
             #Added ens_name here, but maybe this just needs to be added if we are writing to XIOS rather than UM STASH?
             new_stash={'dom_name':spatial_domain,
                        'ens_name':"''",
@@ -881,6 +894,11 @@ uuid_name = 'tracking_id'
                        'use_name':usage
                        }
 
+            #computes the correct hash uuid for this stash
+            hex_uuid=self.get_uuid_hash(new_stash)
+            #namelist_name="[!namelist:umstash_streq("+isec+item+"_"+hex_uuid+")]"
+            namelist_name="namelist:umstash_streq("+isec+item+"_"+hex_uuid+")"
+            
             self.rose[namelist_name]=new_stash
             plog("Added new stash entry for "+stash_code+" to ROSE")
             self.added.append(stash_code)
