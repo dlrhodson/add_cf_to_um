@@ -149,6 +149,7 @@ class UM:
        #computes the correct hash for this stash (as in TidyStashValidate in stash_indices.py)
        #NOTE - this currently ONLY works for streq - use and domain will need to have the name fields removed before this is done!
        text=''
+       
        if 'isec' in section:
           #this must be a streq:
           section_keys=[key for key in section]
@@ -164,8 +165,8 @@ class UM:
           this_value=str(section[key]).replace('\n','').replace('=','')
           text+=key+'='+this_value+'\n'
 
-       #if 'rlev' in text:
-       #   import pdb; pdb.set_trace()
+       if 'rlev' in text:
+          import pdb; pdb.set_trace()
 
        uuid=hashlib.sha1(text.encode(encoding="utf8")).hexdigest()[:8]
      
