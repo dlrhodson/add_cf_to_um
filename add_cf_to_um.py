@@ -152,8 +152,8 @@ class UM:
           #must be domain or use or something?
           #if so, we want to exclude the NAME label from the hash calclation
           #this allows us to compare sections that are identical, except for the names
-          section_keys=[key for key in section if not section in ['use_name','dom_name','tim_name']]
-          
+          section_keys=[key for key in section if not key in ['use_name','dom_name','tim_name']]
+
 
        section_keys.sort()
        for key in section_keys:
