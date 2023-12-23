@@ -81,6 +81,7 @@ class UM:
         self.rose_space_domain_mappings={}
         self.use_matrix={}
         self.stash_levels={}
+        self.stash_pseudo_levels={}  #pseudo level mapping for stash codes
         #Stash mapping
         self.stashMap = configparser.ConfigParser()  
         #turn of the lowercaseization of keys
@@ -364,7 +365,10 @@ uuid_name = 'tracking_id'
 
         for line in stashm:
             if '|' in line:
+               #see https://code.metoffice.gov.uk/doc/um/vn13.4/papers/umdp_C04.pdf
                 bits=line.split('|')
+                #line 1 in stash master
+                #|Model |Sectn | Item |Name 
                 if bits[0]=='1':
                     model=bits[1].strip(' ')
                     if model=='-1':
@@ -374,6 +378,75 @@ uuid_name = 'tracking_id'
                     item=bits[3].strip(' ')
                     name=bits[4]
                     scode='m0'+model+'s'+sec.zfill(2)+'i'+item.zfill(3)
+                #line 2
+                #|Space |Point | Time | Grid |LevelT|LevelF|LevelL|PseudT|PseudF|PseudL|LevCom|
+                #  1       2       3      4       5    6      7      8     9       10     11
+                if bits[0]=='2':
+                    headings=['Space','Point','Time','Grid','LevelT','LevelF','LevelL','PseudT','PseudF','PseudL','LevCom']
+                    this_line={}
+
+                    
+                    for bit in range(len(headings)):
+                       this_line[headings[bit]]=int(bits[bit+1].strip(' '))
+                    self.stash_levels[scode]=this_line
+                    if not this_line['LevelT'] in level_names:
+                        print("Unknown level! "+str(this_line['LevelT']))
+                        print(name)
+                        #import pdb; pdb.set_trace()
+                    else:
+                        self.stash_levels[scode]=this_line
+        return()
+
+
+
+     
+    def read_STASHmaster_A_levels_old(self):
+        file=main_config['main']['stashmaster_A']
+        if not os.path.isfile(file):
+            print(file+" does not exist")
+            exit()
+
+        stashfile=open(file,'r')
+        stashm=stashfile.readlines()
+        #https://reference.metoffice.gov.uk/um/c4/_level_type_code
+        #https://code.metoffice.gov.uk/doc/um/vn13.4/papers/umdp_C04.pdf    
+        #1. Model rho levels
+        #2. Model theta levels
+        #3. Pressure levels
+        #4. Geometric height levels
+        #5. Single level
+        #6. Deep soil levels
+        #7. Potential temperature levels
+        #8. Potential vorticity levels
+        #9. Cloud threshold levels
+        level_names={0:'unspecified',
+                     1:'atm_rho',
+                     2:'atm_theta',
+                     3:'pressure',
+                     4:'unknown',
+                     5:'single',
+                     6:'soil',
+                     7:'theta'
+                     }
+
+        for line in stashm:
+            if '|' in line:
+               #see https://code.metoffice.gov.uk/doc/um/vn13.4/papers/umdp_C04.pdf
+                bits=line.split('|')
+                #line 1 in stash master
+                #|Model |Sectn | Item |Name 
+                if bits[0]=='1':
+                    model=bits[1].strip(' ')
+                    if model=='-1':
+                        #end of file
+                        break
+                    sec=bits[2].strip(' ')
+                    item=bits[3].strip(' ')
+                    name=bits[4]
+                    scode='m0'+model+'s'+sec.zfill(2)+'i'+item.zfill(3)
+                #line 2
+                #|Space |Point | Time | Grid |LevelT|LevelF|LevelL|PseudT|PseudF|PseudL|LevCom|
+                #  1       2       3      4       5    6      7      8     9       10     11
                 if bits[0]=='2':
                     level=int(bits[5].strip(' '))
                     if not level in level_names:
@@ -382,10 +455,12 @@ uuid_name = 'tracking_id'
                         #import pdb; pdb.set_trace()
                     else:
                         self.stash_levels[scode]=level
+                    pseudo_level=int(bits[8].strip(' '))
+                    #pseudo levels, eg SW rad bands, surface tile types, sea ice categories
+                    self.stash_pseudo_levels[scode]=pseudo_level
         return()
 
 
-        
     def read_stash_mappings(self):
         self.cf_to_stash = configparser.ConfigParser()   
         #turn of the lowercaseization of keys
@@ -580,6 +655,7 @@ uuid_name = 'tracking_id'
 
 
     
+    
     def get_space_mappings(self):
         #loop over all space_mappings
         #get all space domain keys for cmip6
@@ -716,6 +792,7 @@ uuid_name = 'tracking_id'
 
         #get the stash code and dimensions for this cf variable
         req_stash,dimensions=self.get_stash_codes(cf_var)
+
         if req_stash==None:
             #that didn't work!
             return()
@@ -770,12 +847,13 @@ uuid_name = 'tracking_id'
         time_domain=self.rose_time_domain_mappings[time_domain_cf]
         spatial_domain=self.rose_space_domain_mappings[spatial_domain_cf]
 
-
+        this_stash=self.stash_levels[stash_code]
         #extract all stash requests from rose
         pattern = r'm(\d{2})s(\d{2})i(\d{3})'
         model,isec,item=re.match(pattern,stash_code).groups()
         this_stash_level=self.rose_get_dom_level(spatial_domain)
-        sc_level=self.stash_levels[stash_code]
+        sc_level=this_stash['LevelT']
+        sc_pseudo_level=this_stash['PseudT']
         #does this spatial_domain use the correct levels that this stash_code is output on?
         if this_stash_level!=sc_level:
             if (this_stash_level==3) and (sc_level==2):
@@ -787,7 +865,7 @@ uuid_name = 'tracking_id'
                 plog("theta levels will be converted to pressure levels")
                 #logging.info("theta levels will be converted to pressure levels")
             else:
-                plog("Request is for "+stash_code+" using "+spatial_domain+" but this uses level="+str(this_stash_level)+" but "+str(stash_code)+" is output on level="+str(self.stash_levels[stash_code]))
+                plog("Request is for "+stash_code+" using "+spatial_domain+" but this uses level="+str(this_stash_level)+" but "+str(stash_code)+" is output on level="+str(sc_level))
                 #logging.info("Request is for "+stash_code+" using "+spatial_domain+" but this uses level="+str(this_stash_level)+" but "+str(stash_code)+" is output on level="+str(self.stash_levels[stash_code]))
                 if (this_stash_level==1) and (sc_level==2):
                     if spatial_domain==self.space_mappings['longitude latitude alevhalf time']:
@@ -831,6 +909,57 @@ uuid_name = 'tracking_id'
                     print("Not sure what to do here!")
                     import pdb; pdb.set_trace()
 
+
+        if sc_pseudo_level!=0:
+           #this field uses pseudo levels
+           #which do we need?
+           print(stash_code+" requires pseudo levels")
+          
+           rose_space_keys=[key for key in self.rose.keys() if 'umstash_domain' in key]
+           pseudo_level_found=False
+           for key in rose_space_keys:
+              #compare the Pseudo level Type with the sc_pseudo_level
+              if int(self.rose[key]['plt'])==sc_pseudo_level and int(self.rose[key]['iopl'])==sc_level:
+                 if 'pslist' in self.rose[key]:
+                    #OK this domain has a pslist
+                    #create pslist of integers
+
+                    pslist=[int(num) for num in self.rose[key]['pslist'].split(',')]
+                    #Does this range of this pseudo level list for this domain match the range defined for the diagnostics in STASHMASTER?
+                    if pslist[0]<=this_stash['PseudF'] and pslist[-1]>=this_stash['PseudL']:
+                       #This domain should at least contain the required range defined for this diagnostic
+                       #This may now always be correct - sometimes we might want a subset of pseudo levels - but how to specify this?
+                       #eg only Plants or Trees in Surface tiles types
+                       pseudo_level_found=True
+                       break
+
+           if pseudo_level_found:
+              this_dom=self.rose[key]['dom_name']
+              print(this_dom+" in ROSE uses the correct pseudo level and model levels "+key)
+              plog("Using "+this_dom+" for "+stash_code)
+              spatial_domain=this_dom
+           else:
+              print("Pseudo level "+str(sc_pseudo_level)+" not found in ROSE")
+              import pdb; pdb.set_trace()
+            
+              cmip6_space_keys=[key for key in self.cmip6.keys() if 'umstash_domain' in key]
+              pseudo_level_found=False
+              for key in cmip6_space_keys:
+                 #compare the Pseudo level Type with the sc_pseudo_level
+                 #also check that the IOPL is correct
+                 if int(self.cmip6[key]['plt'])==sc_pseudo_level and  int(self.cmip6[key]['iopl'])==sc_level:
+                    import pdb; pdb.set_trace()
+
+                    break
+
+              if pseudo_level_found:
+                 print("Pseudo level "+str(sc_pseudo_level)+" found in CMIP6 in "+key)
+                 import pdb; pdb.set_trace()
+              else:
+                 print("Pseudo level "+str(sc_pseudo_level)+" not found in CMIP6")
+                 import pdb; pdb.set_trace()
+           
+        
         if model!="01":
             print("Unknown model in stashcode?")
             print(stash_code)
@@ -851,6 +980,7 @@ uuid_name = 'tracking_id'
                 this_space=this_stash['dom_name']
                 this_time=this_stash['tim_name']
                 #does this stash have the required space and time domain?
+     
                 if (this_time==time_domain) and (this_space==spatial_domain):
                     stash_found=True
                     plog(stash_code+" found in ROSE with "+time_domain+" and "+spatial_domain)
@@ -860,7 +990,7 @@ uuid_name = 'tracking_id'
         #if the stash was found, it already exists, so we don't need to do anything - otherwise..
         if not stash_found:
             #stash code not found in rose with correct time and space domain:
-            print("Need to add stash code")
+            print("Need to add stash code "+stash_code)
            
 
             #for USAGE - we will pick the FIRST usage in the list from use_matrix[time][space]
