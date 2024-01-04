@@ -81,6 +81,7 @@ class UM:
         self.rose_space_domain_mappings={}
         self.use_matrix={}
         self.stash_levels={}
+        self.stash_names={}
         self.stash_pseudo_levels={}  #pseudo level mapping for stash codes
         #Stash mapping
         self.stashMap = configparser.ConfigParser()  
@@ -378,6 +379,7 @@ uuid_name = 'tracking_id'
                     item=bits[3].strip(' ')
                     name=bits[4]
                     scode='m0'+model+'s'+sec.zfill(2)+'i'+item.zfill(3)
+                    self.stash_names[scode]=name
                 #line 2
                 #|Space |Point | Time | Grid |LevelT|LevelF|LevelL|PseudT|PseudF|PseudL|LevCom|
                 #  1       2       3      4       5    6      7      8     9       10     11
@@ -943,7 +945,7 @@ uuid_name = 'tracking_id'
                        break
                     else:
                        print("Found "+this_dom+" but the pseudolevel range "+str(pslist)+" does not match the defined range "+str(this_stash['PseudF'])+"-"+str(this_stash['PseudL'])+" for "+stash_code)
-                       print("If you want to use "+this_dom+" for "+stash_code+" add the line:\n"+stash_code+" = "+this_dom+"\nto "+main_config['user']['log_file'].strip("'")+" under a [domains] section")
+                       print("If you want to use "+this_dom+" for "+stash_code+" ("+self.stash_names[stash_code].strip()+") "+" add the line:\n"+stash_code+" = "+this_dom+"\nto "+main_config['user']['log_file'].strip("'")+" under a [domains] section")
                              
                     
            if pseudo_level_found:
