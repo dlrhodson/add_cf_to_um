@@ -1033,7 +1033,7 @@ uuid_name = 'tracking_id'
      
                 if (this_time==time_domain) and (this_space==spatial_domain):
                     stash_found=True
-                    plog(stash_code+" found in ROSE with "+time_domain+" and "+spatial_domain)
+                    plog(stash_code+" already exists in "+self.rose_stash+" with "+time_domain+" and "+spatial_domain+" so no need to add anything")
                     #logging.info(stash_code+" already exists at "+time_domain+" and "+spatial_domain)
                     break
 
