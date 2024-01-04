@@ -837,13 +837,293 @@ uuid_name = 'tracking_id'
         print(dom_name+' not found?')
         import pdb; pdb.set_trace()
 
+
+    def get_domain(self,stash_code,spatial_domain_cf):
+        #checks to see if the domain defined by spatial_domain_cf matches what is required by stash_code
+        #and returns the correct domain name, if possibl
+        spatial_domain=self.rose_space_domain_mappings[spatial_domain_cf]
+
+        this_stash=self.stash_levels[stash_code]
+        this_stash_level=self.rose_get_dom_level(spatial_domain)
+        
+        sc_level=this_stash['LevelT']
+        sc_pseudo_level=this_stash['PseudT']
+
+        #do we already have a mapping for this?
+        if 'domains' in main_config:
+           user_domains=main_config['domains']
+           if stash_code in user_domains:
+              #a mapping is defined in the config
+              spatial_domain=user_domains[stash_code]
+              plog("A domain mapping for "+stash_code+" was found in "+conf_file+": "+spatial_domain+" -will use this")
+              return(spatial_domain)
+           #there is a domains section defined in the config file
            
-    
+
+        #does this spatial_domain use the correct levels that this stash_code is output on?
+        if this_stash_level!=sc_level:
+            #No 
+            if (this_stash_level==3) and (sc_level==2):
+                #this request is on pressure levels - OK for theta and rho levels as they will be regridded
+                plog("rho levels will be converted to pressure levels")
+                #logging.info("rho levels will be converted to pressure levels")
+            elif (this_stash_level==3) and (sc_level==1):
+                #this request is on pressure levels - OK for theta and rho levels as they will be regridded
+                plog("theta levels will be converted to pressure levels")
+                #logging.info("theta levels will be converted to pressure levels")
+            else:
+                plog("Request is for "+stash_code+" using "+spatial_domain+" but this uses level="+str(this_stash_level)+" but "+str(stash_code)+" is output on level="+str(sc_level))
+                #logging.info("Request is for "+stash_code+" using "+spatial_domain+" but this uses level="+str(this_stash_level)+" but "+str(stash_code)+" is output on level="+str(self.stash_levels[stash_code]))
+                if (this_stash_level==1) and (sc_level==2):
+                    if spatial_domain==self.space_mappings['longitude latitude alevhalf time']:
+                        plog("switching output from "+self.space_mappings['longitude latitude alevhalf time']+" to "+self.space_mappings['longitude latitude alevel time'])
+                        #plog(ostr)
+                        #logging.info(ostr)
+                        spatial_domain=self.space_mappings['longitude latitude alevel time']
+                elif (this_stash_level==2) and (sc_level==1):
+                    if spatial_domain==self.space_mappings['longitude latitude alevel time']:
+                        plog("switching output from "+self.space_mappings['longitude latitude alevel time']+" to "+self.space_mappings['longitude latitude alevhalf time'])
+                        #print(ostr)
+                        #logging.info(ostr)
+                        spatial_domain=self.space_mappings['longitude latitude alevhalf time']
+                elif (this_stash_level==1) and (sc_level==5):
+                    #requested on RHO but this is a single level field - switch to 'DIAG'
+                    plog("switching output from "+self.space_mappings['longitude latitude alevhalf time']+" to "+self.space_mappings['longitude latitude time'])
+                    #print(ostr)
+                    #logging.info(ostr)
+
+                    spatial_domain=self.space_mappings['longitude latitude time']
+                elif (this_stash_level==2) and (sc_level==5):
+                    #requested on RHO but this is a single level field - switch to 'DIAG'
+                    plog("switching output from "+self.space_mappings['longitude latitude alevel time']+" to "+self.space_mappings['longitude latitude time'])  
+                    #print(ostr)
+                    #logging.info(ostr)
+
+                    spatial_domain=self.space_mappings['longitude latitude time']
+                elif (this_stash_level==5) and (sc_level==6):
+                    #this is probably a soil diagnostic that is being integrated over levels
+                    #allow the level 6 (soil) levels to override
+                    plog("Allow soil diagnostic to be output on all soil levels")
+                    if "'DSOIL'" in self.rose_space_domain_mappings.values():
+                        spatial_domain="'DSOIL'"
+                        plog("Converted space domain to 'DSOIL'")
+                    else:
+                        print("Need DSOIL domain for this diagnostics, but not available???")
+                        import pdb; pdb.set_trace()
+
+                        
+                else:
+                    print("Not sure what to do here!")
+                    import pdb; pdb.set_trace()
+
+
+        if sc_pseudo_level!=0:
+           #this field uses pseudo levels
+           #which do we need?
+           print(stash_code+" requires pseudo levels")
+
+           
+           rose_space_keys=[key for key in self.rose.keys() if 'umstash_domain' in key]
+           pseudo_level_found=False
+           for key in rose_space_keys:
+              #compare the Pseudo level Type with the sc_pseudo_level
+              if int(self.rose[key]['plt'])==sc_pseudo_level and int(self.rose[key]['iopl'])==sc_level:
+                 if 'pslist' in self.rose[key]:
+                    #OK this domain has a pslist
+                    #create pslist of integers
+                    this_dom=self.rose[key]['dom_name']
+                    
+                    pslist=[int(num) for num in self.rose[key]['pslist'].split(',')]
+                    #Does this range of this pseudo level list for this domain match the range defined for the diagnostics in STASHMASTER?
+                    if pslist[0]==this_stash['PseudF'] and pslist[-1]==this_stash['PseudL']:
+                       #This domain should at least contain the required range defined for this diagnostic
+                       #This may now always be correct - sometimes we might want a subset of pseudo levels - but how to specify this?
+                       #eg only Plants or Trees in Surface tiles types
+                       pseudo_level_found=True
+                       break
+                    else:
+                       print("Found "+this_dom+" but the pseudolevel range "+str(pslist)+" does not match the defined range "+str(this_stash['PseudF'])+"-"+str(this_stash['PseudL'])+" for "+stash_code)
+                       print("If you want to use "+this_dom+" for "+stash_code+" add the line:\n"+stash_code+" = "+this_dom+"\nto "+main_config['user']['log_file'].strip("'")+" under a [domains] section")
+                             
+                    
+           if pseudo_level_found:
+              
+              print(this_dom+" in ROSE uses the correct pseudo level and model levels "+key)
+              plog("Using "+this_dom+" for "+stash_code)
+              spatial_domain=this_dom
+           else:
+              print("Pseudo level range not found in ROSE domains")
+              print("Checking CMIP reference")
+            
+              cmip6_space_keys=[key for key in self.cmip6.keys() if 'umstash_domain' in key]
+              
+              for key in cmip6_space_keys:
+                 #compare the Pseudo level Type with the sc_pseudo_level
+                 #also check that the IOPL is correct
+                 if int(self.cmip6[key]['plt'])==sc_pseudo_level and  int(self.cmip6[key]['iopl'])==sc_level:
+                    
+                    if 'pslist' in self.cmip6[key]:
+                       #OK this domain has a pslist
+                       #create pslist of integers
+                       this_dom=self.cmip6[key]['dom_name']
+                       
+                       pslist=[int(num) for num in self.cmip6[key]['pslist'].split(',')]
+                       #Does this range of this pseudo level list for this domain match the range defined for the diagnostics in STASHMASTER?
+                       if pslist[0]==this_stash['PseudF'] and pslist[-1]==this_stash['PseudL']:
+                          #This domain should at least contain the required range defined for this diagnostic
+                          #This may now always be correct - sometimes we might want a subset of pseudo levels - but how to specify this?
+                          #eg only Plants or Trees in Surface tiles types
+                          pseudo_level_found=True
+                          break
+                       else:
+                          print("Found "+this_dom+" but the pseudolevel range "+str(pslist)+" does not match the defined range "+str(this_stash['PseudF'])+"-"+str(this_stash['PseudL'])+" for "+stash_code)
+                    
+                    break
+
+              if pseudo_level_found:
+                 print("Pseudo level "+str(sc_pseudo_level)+" found in CMIP6 in "+key)
+                 import pdb; pdb.set_trace()
+              else:
+                 print("Pseudo level range  not found in CMIP6 Domains")
+                 print("Need to define a domain usage in "+main_config['user']['log_file'].strip("'")+" under a [domains] section")
+                 exit()
+        return(spatial_domain)
+
     def add_stash(self,stash_code,time_domain_cf,spatial_domain_cf):
         #checks to see if the stash_code (e.g m01s03i236) exists in the rose config object
         #and that this stash code is output using the correct time and spatial domains
         #if not, adds the stash code and any required domains
 
+        spatial_domain=self.get_domain(stash_code,spatial_domain_cf)
+        
+       
+        time_domain=self.rose_time_domain_mappings[time_domain_cf]
+        
+        this_stash=self.stash_levels[stash_code]
+        #extract all stash requests from rose
+        pattern = r'm(\d{2})s(\d{2})i(\d{3})'
+        model,isec,item=re.match(pattern,stash_code).groups()
+        this_stash_level=self.rose_get_dom_level(spatial_domain)
+        sc_level=this_stash['LevelT']
+        sc_pseudo_level=this_stash['PseudT']
+
+               
+        if model!="01":
+            print("Unknown model in stashcode?")
+            print(stash_code)
+            import pdb; pdb.set_trace()
+
+
+        stash_found=False
+        time_found=False
+        space_found=False
+        #extract all the umstash requests from rose 
+        stash_c= [key for key in self.rose.sections() if re.search('umstash_streq', key)]
+        #loop over all these and see if one matches the stash id we require at the same freq output and domain
+        for req in stash_c:
+            this_stash=self.rose[req]
+            #if the isec and item match and this is the atmospher (model=01)
+            if (this_stash['isec'].zfill(2)==isec) and (this_stash['item'].zfill(3)==item) and model=='01':
+
+                this_space=this_stash['dom_name']
+                this_time=this_stash['tim_name']
+                #does this stash have the required space and time domain?
+     
+                if (this_time==time_domain) and (this_space==spatial_domain):
+                    stash_found=True
+                    plog(stash_code+" found in ROSE with "+time_domain+" and "+spatial_domain)
+                    #logging.info(stash_code+" already exists at "+time_domain+" and "+spatial_domain)
+                    break
+
+        #if the stash was found, it already exists, so we don't need to do anything - otherwise..
+        if not stash_found:
+            #stash code not found in rose with correct time and space domain:
+            print("Need to add stash code "+stash_code)
+           
+
+            #for USAGE - we will pick the FIRST usage in the list from use_matrix[time][space]
+            #Does the time_domain exist in the use_matrix?
+            if not time_domain in self.use_matrix:
+                print(time_domain+" doesn't exist in the use matrix?")
+                #can we find this time domain in CMIP6?
+                import pdb; pdb.set_trace()
+
+                #what about the spatial_domain?
+            elif not spatial_domain in self.use_matrix[time_domain]:
+                plog(spatial_domain+" doesn't exist in the use matrix?")
+                #OK so this domain is not associated with an existing USAGE
+                #is there a DEFAULT for this time_domain?
+
+
+                if time_domain_cf in self.default_usage:
+                    #there is!
+                    usage=self.default_usage[time_domain_cf]
+                    plog("using the default usage for "+time_domain+" of "+usage)
+                    #check that this default usage actually exists in rose_conf - if not - take action!
+                    self.check_use_already_exists(usage)
+                    
+                    #Can't assume that all STASH have "UPD" defined as ann output stream
+                    #
+
+                    #print(oft)
+                    #logging.info(oft)
+                else:
+                    #Ok, so no default usage and no spatial_domain entry in the use_matrux
+                    #so we will pick the first one that is associated with this time_domain
+                    u1=[]
+                    for i in self.use_matrix[time_domain].values():
+                        u1.extend(i)
+                    u2=list(set(u1))
+                    u2.sort()
+                    usage=u2[0]
+                    plog("No default usage for "+time_domain+" picking first: "+usage)
+
+            else:
+                usage=self.use_matrix[time_domain][spatial_domain][0]
+
+            plog("Will use "+usage+" as the usage")
+
+            #print(oft)
+            #logging.info(oft)
+            isec1=isec.lstrip('0') if isec!='00' else '0'
+            item1=item.lstrip('0') if item!='000' else '0'
+
+
+
+
+            # Convert the UUID to an 8-digit hexadecimal representation
+            #hex_uuid = format(int(uuid.uuid4().hex[:8], 16), 'x')
+            
+            #Added ens_name here, but maybe this just needs to be added if we are writing to XIOS rather than UM STASH?
+            new_stash={'dom_name':spatial_domain,
+                       'ens_name':"''",
+                       'isec':isec1,
+                       'item':item1,
+                       'package':"'EXTRA'",
+                       'tim_name':time_domain,
+                       'use_name':usage
+                       }
+
+            #computes the correct hash uuid for this stash
+            hex_uuid=self.get_uuid_hash(new_stash)
+            #namelist_name="[!namelist:umstash_streq("+isec+item+"_"+hex_uuid+")]"
+            namelist_name="namelist:umstash_streq("+isec+item+"_"+hex_uuid+")"
+            
+            self.rose[namelist_name]=new_stash
+            plog("Added new stash entry for "+stash_code+" to ROSE using "+spatial_domain+" and "+time_domain)
+            self.added.append(stash_code)
+            #logging.info('Added '+stash_code+' using '+time_domain+' '+spatial_domain+' '+usage)
+        return(stash_found)
+
+        
+    def add_stash_old(self,stash_code,time_domain_cf,spatial_domain_cf):
+        #checks to see if the stash_code (e.g m01s03i236) exists in the rose config object
+        #and that this stash code is output using the correct time and spatial domains
+        #if not, adds the stash code and any required domains
+
+        spatial_domain=self.get_domain(stash_code,spatial_domain_cf)
+        
+       
         time_domain=self.rose_time_domain_mappings[time_domain_cf]
         spatial_domain=self.rose_space_domain_mappings[spatial_domain_cf]
 
@@ -854,6 +1134,9 @@ uuid_name = 'tracking_id'
         this_stash_level=self.rose_get_dom_level(spatial_domain)
         sc_level=this_stash['LevelT']
         sc_pseudo_level=this_stash['PseudT']
+
+        
+        
         #does this spatial_domain use the correct levels that this stash_code is output on?
         if this_stash_level!=sc_level:
             if (this_stash_level==3) and (sc_level==2):
@@ -914,7 +1197,8 @@ uuid_name = 'tracking_id'
            #this field uses pseudo levels
            #which do we need?
            print(stash_code+" requires pseudo levels")
-          
+
+           
            rose_space_keys=[key for key in self.rose.keys() if 'umstash_domain' in key]
            pseudo_level_found=False
            for key in rose_space_keys:
@@ -923,42 +1207,62 @@ uuid_name = 'tracking_id'
                  if 'pslist' in self.rose[key]:
                     #OK this domain has a pslist
                     #create pslist of integers
-
+                    this_dom=self.rose[key]['dom_name']
+                    
                     pslist=[int(num) for num in self.rose[key]['pslist'].split(',')]
                     #Does this range of this pseudo level list for this domain match the range defined for the diagnostics in STASHMASTER?
-                    if pslist[0]<=this_stash['PseudF'] and pslist[-1]>=this_stash['PseudL']:
+                    if pslist[0]==this_stash['PseudF'] and pslist[-1]==this_stash['PseudL']:
                        #This domain should at least contain the required range defined for this diagnostic
                        #This may now always be correct - sometimes we might want a subset of pseudo levels - but how to specify this?
                        #eg only Plants or Trees in Surface tiles types
                        pseudo_level_found=True
                        break
-
+                    else:
+                       print("Found "+this_dom+" but the pseudolevel range "+str(pslist)+" does not match the defined range "+str(this_stash['PseudF'])+"-"+str(this_stash['PseudL'])+" for "+stash_code)
+                       print("If you want to use "+this_dom+" for "+stash_code+" add the line:\n"+stash_code+" = "+this_dom+"\nto "+main_config['user']['log_file'].strip("'")+" under a [domains] section")
+                             
+                    
            if pseudo_level_found:
-              this_dom=self.rose[key]['dom_name']
+              
               print(this_dom+" in ROSE uses the correct pseudo level and model levels "+key)
               plog("Using "+this_dom+" for "+stash_code)
               spatial_domain=this_dom
            else:
-              print("Pseudo level "+str(sc_pseudo_level)+" not found in ROSE")
-              import pdb; pdb.set_trace()
+              print("Pseudo level range not found in ROSE domains")
+              print("Checking CMIP reference")
             
               cmip6_space_keys=[key for key in self.cmip6.keys() if 'umstash_domain' in key]
-              pseudo_level_found=False
+              
               for key in cmip6_space_keys:
                  #compare the Pseudo level Type with the sc_pseudo_level
                  #also check that the IOPL is correct
                  if int(self.cmip6[key]['plt'])==sc_pseudo_level and  int(self.cmip6[key]['iopl'])==sc_level:
-                    import pdb; pdb.set_trace()
-
+                    
+                    if 'pslist' in self.cmip6[key]:
+                       #OK this domain has a pslist
+                       #create pslist of integers
+                       this_dom=self.cmip6[key]['dom_name']
+                       
+                       pslist=[int(num) for num in self.cmip6[key]['pslist'].split(',')]
+                       #Does this range of this pseudo level list for this domain match the range defined for the diagnostics in STASHMASTER?
+                       if pslist[0]==this_stash['PseudF'] and pslist[-1]==this_stash['PseudL']:
+                          #This domain should at least contain the required range defined for this diagnostic
+                          #This may now always be correct - sometimes we might want a subset of pseudo levels - but how to specify this?
+                          #eg only Plants or Trees in Surface tiles types
+                          pseudo_level_found=True
+                          break
+                       else:
+                          print("Found "+this_dom+" but the pseudolevel range "+str(pslist)+" does not match the defined range "+str(this_stash['PseudF'])+"-"+str(this_stash['PseudL'])+" for "+stash_code)
+                    
                     break
 
               if pseudo_level_found:
                  print("Pseudo level "+str(sc_pseudo_level)+" found in CMIP6 in "+key)
                  import pdb; pdb.set_trace()
               else:
-                 print("Pseudo level "+str(sc_pseudo_level)+" not found in CMIP6")
-                 import pdb; pdb.set_trace()
-           
+                 print("Pseudo level range  not found in CMIP6 Domains")
+                 print("Need to define a domain usage in "+main_config['user']['log_file'].strip("'")+" under a [domains] section")
+                 exit()
         
         if model!="01":
             print("Unknown model in stashcode?")
