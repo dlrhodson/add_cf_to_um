@@ -2230,6 +2230,14 @@ for line in variable_list:
         print(line['realm'])
         import pdb; pdb.set_trace()
 
+
+um.missing.sort()
+um.added.sort()
+nemo.missing.sort()
+nemo.added.sort()
+cice.missing.sort()
+cice.added.sort()
+        
 plog(bold("UM diagnostics unable to add: "+' '.join(um.missing)))
 plog(bold("Nemo diagnostics unable to add: "+' '.join(nemo.missing)))
 plog(bold("CICE diagnostics unable to add: "+' '.join(cice.missing)))
