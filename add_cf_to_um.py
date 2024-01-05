@@ -760,7 +760,9 @@ uuid_name = 'tracking_id'
         return()
 
 
-    def get_stash_codes(self,cf_variable):    
+    def get_stash_codes(self,cf_variable):
+        
+
         if not cf_variable in self.cf_to_stash.sections():
             print(cf_variable+" not found in the stash mapping!")
             plog(bold("skipping "+cf_variable))
@@ -1529,7 +1531,9 @@ class CICE:
            #this IS a valid CICE diagnostic
 
            diag_freq=this_section[fdiag]
-           if not this_freq in diag_freq:
+
+           #this_freq = something line "'m'" so need to remove ' for comparison to work
+           if not this_freq.strip("'") in diag_freq:
               plog(diag+" not currently output at "+freq+" - adding..")
               #if diag_freq is just 'x' we replace with this_freq
               if "x" in diag_freq:
@@ -1548,6 +1552,7 @@ class CICE:
               histfreq=setup['histfreq'].split(',')
               histfreq_n=setup['histfreq_n'].split(',')
               #is the output frequency for this diagnostic already present in the histfreq variable?
+
               if not this_freq in histfreq:
                  #no - so we need to add it to the next available slot
                  plog(this_freq+' not in current histfreq: '+','.join(histfreq))
