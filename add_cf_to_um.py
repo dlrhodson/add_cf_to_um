@@ -175,7 +175,7 @@ def add_nemo_cice_diagnostic(diag,freq,dims):
             print("uncommenting "+diag)
             
             this_freq=nemo.freq_map[freq]
-            file_group=nemo.get_file_group(thiSs_freq)
+            file_group=nemo.get_file_group(this_freq)
             #does this diag have a parent in the off_diag?
             parent=fields[0].getparent()
             if len(parent)==0:
