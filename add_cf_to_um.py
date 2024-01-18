@@ -3121,6 +3121,7 @@ class Nemo:
                 #this file is the correct place to add the diagnostic
                 plog("copying "+diag+" to "+file.attrib['id'])
                 file.append(deepcopy(field))
+                self.added.append(diag)
                 return()
 
         
