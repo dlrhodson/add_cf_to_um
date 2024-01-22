@@ -2024,6 +2024,13 @@ class CICE:
                        #we also need to add how often this frequency needs to be output
                        histfreq_n[i]='1'
                        found=True
+                       #if we are outputting daily, then the first element in histfreq should be "'d'"
+                       #this is so that postproc picks up the daily files and concantenates them into a single monthly file of daily means
+                       if "'d'" in histfreq:
+                           d_pos=histfreq.index("'d'")
+                           histfreq=["'d'"]+histfreq[0:d_pos]+histfreq[d_pos+1:]
+                           histfreq_n=[histfreq_n[d_pos]]+histfreq_n[0:d_pos]+histfreq_n[d_pos+1:]
+
                        break
                  if not found:
                     print('no space for addditional CICE diag frequency!')
