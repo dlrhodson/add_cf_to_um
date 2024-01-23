@@ -34,6 +34,32 @@ class color:
     UNDERLINE = '\033[4m'
     END = '\033[0m'
 
+
+def sections_equal(section1, section2):
+    # Check if both sections exist
+    if config.has_section(section1) and config.has_section(section2):
+        # Get key-value pairs for both sections
+        items1 = config.items(section1)
+        items2 = config.items(section2)
+
+        # Check if the items in both sections are equal
+        return items1 == items2
+    else:
+        # One or both sections do not exist
+        return False
+
+
+def is_equal_except(dict1,dict2,not_key):
+    '''
+    tests if two dicts are equal except for one key
+    '''
+
+    d1=[(key, value) for key, value in dict1 if key != not_key]
+    d2=[(key, value) for key, value in dict2 if key != not_key]
+
+    return d1==d2
+    
+    
 def bold(message):
     return(color.BOLD+message+color.END)
 
@@ -340,7 +366,8 @@ class UM:
         #day is ever 1 days (3) sampling every time step (1)
         #mon is every 30 days (3), sampling every time step (1)
         self.tim_dom={'day':{'ifre': '1', 'unt1': '3', 'unt2': '1', 'unt3': '3'},
-                      'mon':{'ifre': '30', 'unt1': '3', 'unt2': '1', 'unt3': '3'}
+                      'mon':{'ifre': '30', 'unt1': '3', 'unt2': '1', 'unt3': '3'},
+                      '6hrPt':{'ifre': '6', 'istr':'6', 'ityp':'1', 'unt3': '2'}
                       }
         
         
@@ -355,6 +382,7 @@ class UM:
                              'longitude latitude alevhalf time':"'DALLRH'",
                              'longitude latitude plev8 time':"'PLEV8'",
                              'longitude latitude plev19 time':"'PLEV19'",
+                             'longitude latitude plev14 time':"'PLEV14'",
                              'longitude latitude soil time':"'DSOIL'",
                              'longitude latitude sdepth time':"'DSOIL'",
                              'longitude latitude sdepth1 time':"'DSOIL1'"
@@ -1088,6 +1116,28 @@ uuid_name = 'tracking_id'
                     break
             if not space_name_found:
                 print('Space domain '+this_space_dom+" Not found in CMIP6 reference!")
+                user_domains=[key for key in main_config if 'umstash_domain' in key]
+                if user_domains:
+                    print("Found some user defined domains "+' '.join(user_domains))
+                    user_domain_found=[key for key in user_domains if main_config[key]['dom_name']==this_space_dom]
+                    if not user_domain_found:
+                        print("No "+this_space_dom+" found in the user domaines :(")
+                        import pdb; pdb.set_trace()
+                    #just pick first - they all match the this_space_dom!
+                    user_space=user_domain_found[0]
+                    user_space_dom_full=main_config[user_space]
+                    #copy across USER DOMAON
+                    #the uuid hash for this domain may not be the same as if it had been calculated for this version of the UM
+                    #so let's recalculate it:
+                    this_uuid=self.get_uuid_hash(user_space_dom_full)
+                    user_space_sub=user_space.split('(')
+                    user_space_new=user_space_sub[0]+'('+user_space_sub[1].split('_')[0]+'_'+this_uuid+')'
+                    self.rose[user_space_new]=user_space_dom_full
+                    self.rose_space_domain_mappings[space]=user_space_dom_full['dom_name']
+                    print("Copied user domain "+user_space_dom_full['dom_name']+" to ROSE")
+                    
+                    return()
+
                 print("Not sure what to do now!")
                 import pdb; pdb.set_trace()
 
@@ -1416,8 +1466,9 @@ uuid_name = 'tracking_id'
 
         #pull in the part mapping for this time domain 
         time_filter=self.tim_dom[freq]
-        #add the ityp for the method
-        time_filter['ityp']=self.lbproc_mappings[lbproc]
+        #if ityp is not already defined in time_filterm then add the ityp for the method from the lbproc mappings
+        if not 'ityp' in time_filter:
+            time_filter['ityp']=self.lbproc_mappings[lbproc]
         rose_lbproc=[ x for x in rose_time_keys if is_subset(time_filter,um.rose[x])]
         time_usage_found=False
         #rose_lbproc=[ x for x in rose_time_keys if um.rose[x]['ityp']==self.lbproc_mappings[options['lbproc']]]
@@ -1439,16 +1490,25 @@ uuid_name = 'tracking_id'
             #COPY ACCROSS
             if len(cmip6_lbproc)>1:
                 print("Hmm - we have more than one choice here!")
-                import pdb; pdb.set_trace()
-            else:
-                time_domain=um.cmip6[cmip6_lbproc[0]]
-                time_domain_name=time_domain['tim_name']
-                #import pdb; pdb.set_trace()
-                print("Copying "+time_domain_name+" to ROSE")
-                self.copy_cmip6_tim_dom_to_rose(time_domain,spatial_domain)
-                print("Switching to "+time_domain_name)
+                if len(cmip6_lbproc)>2:
+                    print("Too many!")
+                    import pdb; pdb.set_trace()
+                else:
+                    if not is_equal_except(um.cmip6.items(cmip6_lbproc[0]),um.cmip6.items(cmip6_lbproc[1]),'tim_name'):
+                        print("Two choices, but not equivalent!")
+                        import pdb; pdb.set_trace()
+                    print("2 choices, but these are equivalent time profiles")
+                    print("We will use "+cmip6_lbproc[0])
+             
+                    
+            time_domain=um.cmip6[cmip6_lbproc[0]]
+            time_domain_name=time_domain['tim_name']
+            #import pdb; pdb.set_trace()
+            print("Copying "+time_domain_name+" to ROSE")
+            self.copy_cmip6_tim_dom_to_rose(time_domain,spatial_domain)
+            print("Switching to "+time_domain_name)
 
-                return(time_domain_name)
+            return(time_domain_name)
 
         print("LBPROC not found anywhere!")
         import pdb; pdb.set_trace()
@@ -1495,6 +1555,7 @@ uuid_name = 'tracking_id'
                 print(stash_code+" required "+  blev_lc +" - and this DOES exist in "+dims)
            else:
                 print(stash_code+" required "+  blev_lc +" - but this DOES NOT exist in "+dims)
+
                 groups=re.match(r'.*?\s(plev.*?)\s.*?',dims)
                 if not groups:
                    print("Not sure what to do now!")
