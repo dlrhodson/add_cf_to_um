@@ -459,6 +459,7 @@ class UM:
         self.get_space_mappings()
 
 
+
     def copy_cmip6_tim_dom_to_rose(self,this_cmip6,this_domain):
         '''
         copy a cmip6 time domain to the rose stash
@@ -1088,11 +1089,12 @@ uuid_name = 'tracking_id'
         #WILL NEED TO ADD ANY MISSING SPACE DOMAINS TO ROSE
         cmip6_space_keys=[key for key in self.cmip6.keys() if 'umstash_domain' in key]
         rose_space_keys=[key for key in self.rose.keys() if 'umstash_domain' in key]
-
+ 
         #rose_space_mappings={}
         #loop over all the space mappings (e.g. 'longitude latitude time':"'DIAG'")
         #make sure that these spatial domains exist in rose, if not -copy across
         for space in self.space_mappings:
+            
             this_space_dom=self.space_mappings[space]
             #loop over all cmip6 space domains
             space_name_found=False
@@ -1136,7 +1138,7 @@ uuid_name = 'tracking_id'
                     self.rose_space_domain_mappings[space]=user_space_dom_full['dom_name']
                     print("Copied user domain "+user_space_dom_full['dom_name']+" to ROSE")
                     
-                    return()
+                    continue
 
                 print("Not sure what to do now!")
                 import pdb; pdb.set_trace()
