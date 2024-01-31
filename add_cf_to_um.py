@@ -350,6 +350,8 @@ class UM:
         #reads in all configuration files
         #and sets up all mappings
 
+        self.nc_found=[] #list of UM diagnostics found in the NC file during --check_output
+        self.nc_missing=[] #list of UM diagnostics missing in the NC file during --check_output
         self.missing=[] # list of diagnostics we failed to add!
         self.added=[] # list of diagnostics we succeeded in adding!
         self.umOrXIOS=umOrXIOS
@@ -1516,7 +1518,31 @@ uuid_name = 'tracking_id'
         import pdb; pdb.set_trace()
 
         return(time_domain) 
-        
+
+    def nc_check_stash(self,stash_code,time_domain_cf,spatial_domain_cf):
+        print("Check output")
+        matches=[key for key in nc_output if key.nc_get_variable()==stash_code]
+        if not matches:
+            print(stash_code+" not found in NC output")
+        else:
+            print(stash_code+" found in NC output")
+            #does this have the required domain?
+            spatial_domain_cf_list=sorted(spatial_domain_cf.split(' '))
+
+            for this_match in matches:
+
+                nc_domain=sorted([item.standard_name for item in this_match.coords().values()])
+                if spatial_domain_cf_list==nc_domain:
+                    #spatial domains match!
+                    if time_domain_cf == this_match.properties()['name'].split('_')[-1]:
+                        #time domains match
+                        print("Time and spatial domains match")
+                        um.nc_found.append([stash_code,time_domain_cf,spatial_domain_cf])
+                        return(True)
+        #if we get to here, there were no matches!
+        print("Couldn't find "+stash_code+" in NC for "+spatial_domain_cf+" at "+time_domain_cf)
+        self.nc_missing.append([stash_code,time_domain_cf,spatial_domain_cf])
+        return(False)
      
     def add_stash(self,stash_code0,time_domain_cf,spatial_domain_cf):
         #checks to see if the stash_code (e.g m01s03i236) exists in the rose config object
@@ -1535,6 +1561,9 @@ uuid_name = 'tracking_id'
             options={}
         stash_code='m'+model+'s'+isec+'i'+item
 
+
+        
+        
         #rearrnge options as a dict
 
         #default time domains
@@ -1607,14 +1636,20 @@ uuid_name = 'tracking_id'
                     stash_found=True
                     plog(stash_code+" already exists in "+self.rose_stash+" with "+time_domain+" and "+spatial_domain+" so no need to add anything")
                     #logging.info(stash_code+" already exists at "+time_domain+" and "+spatial_domain)
-
+                    
+                    if check_output:
+                        if self.nc_check_stash(stash_code,time_domain_cf,spatial_domain_cf):
+                            #if this returns true - the the stash code exists with this time and space domain in the netcdf
+                            return()
+                            
+                            
                     break
 
         #if the stash was found, it already exists, so we don't need to do anything - otherwise..
         if not stash_found:
             #stash code not found in rose with correct time and space domain:
             print("Need to add stash code "+stash_code)
-           
+            
 
             #for USAGE - we will pick the FIRST usage in the list from use_matrix[time][space]
             #Does the time_domain exist in the use_matrix?
@@ -1970,11 +2005,16 @@ class CICE:
 
     def __init__(self):
 
-        
+
+        self.freq_map={'1d':'day','1m':'mon'}
         #self.read_rose_app_conf(file+'/'+ice_conf)
         self.rose_cice=main_config['user']['job_path']+'app/nemo_cice/rose-app.conf'
         self.cice_diagnostics_file=main_config['main']['cice_diags']
         self.rose,self.rose_header=self.read_rose_app_conf(self.rose_cice)
+
+        self.nc_found=[] #list of UM diagnostics found in the NC file during --check_output
+        self.nc_missing=[] #list of UM diagnostics missing in the NC file during --check_output
+
         self.missing=[] # list of diagnostics we failed to add!
         self.added=[]#list of added diagnostics
 
@@ -2024,6 +2064,41 @@ class CICE:
        return any(i in operators for i in input_string)
 
 
+    def nc_check_ice(self,fdiag,freq,dims):
+        print("Check Ice output")
+        #CICE doesn't have sea ice types, or classes, so remove this dimension
+        dims=dims.replace('typesi','')
+        diag=fdiag.replace('f_','')
+        matches=[key for key in nc_output if key.nc_get_variable()==diag]
+        if matches:
+            print(diag+" found in NC output")
+            #import pdb; pdb.set_trace()
+            #does this have the required domain?
+            spatial_domain_cf_list=sorted(dims.split())
+            ##HERE
+            ## SPATIAL domain doesn't map perfectly as ICE is IJ not long lat!
+            for this_match in matches:
+                nc_domain1=[item.nc_get_variable() for item in this_match.coords().values()]
+                nc_domain=sorted([item.replace('TLON','longitude').replace('TLAT','latitude') for item in nc_domain1])
+                #nc_domain=sorted([item.standard_name for item in this_match.coords().values()])
+                if spatial_domain_cf_list==nc_domain:
+                    #spatial domains match!
+                    ##THIS DOESN'T work for CICE
+                    #try and get the frequency of this variable from the original file name - should be 1d or 1m
+                    match_freq=this_match.get_filenames().pop().split('_')[-2]
+                    if freq == self.freq_map[match_freq]:
+                        #time domains match
+                        print("Time and spatial domains match")
+                        self.nc_found.append([diag,freq,dims])
+                        return(True)
+
+        else:
+            print(diag+" not found in NC output")
+
+        print("Couldn't find "+diag+" in NC for "+dims+" at "+freq)
+        self.nc_missing.append([diag,freq,dims])
+        return(False)
+    
     def addIceDiag(self,fdiag,freq,dims):
     
         print("")
@@ -2039,7 +2114,12 @@ class CICE:
             import pdb; pdb.set_trace()
         this_freq=freq_map[freq]
 
-         
+        if check_output:
+            if self.nc_check_ice(fdiag,freq,dims):
+                return()
+                import pdb; pdb.set_trace()
+
+        
         #if 'ice_present' in fdiag:
         #    import pdb; pdb.set_trace()
         #
@@ -2358,6 +2438,11 @@ class Nemo:
     #and sets up all mappings
 
         self.freq_map={'mon':'1mo', 'day':'1d'}
+
+
+        self.nc_found=[] #list of UM diagnostics found in the NC file during --check_output
+        self.nc_missing=[] #list of UM diagnostics missing in the NC file during --check_output
+
         self.missing=[] # list of diagnostics we failed to add!
         self.added=[] # list of diagnostics we succesfully to added!
 
@@ -2454,12 +2539,56 @@ class Nemo:
         return(sections)
 
 
+
+    
+    def nc_check_ocean(self,diag,freq,dims):
+        print("Check Ocean output")
+        matches=[key for key in nc_output if key.nc_get_variable()==diag]
+        if matches:
+            print(diag+" found in NC output")
+            #import pdb; pdb.set_trace()
+            #does this have the required domain?
+            spatial_domain_cf_list=sorted(dims.split())
+            ##HERE
+            ## SPATIAL domain doesn't map perfectly as ICE is IJ not long lat!
+            for this_match in matches:
+                nc_domain1=[item.nc_get_variable() for item in this_match.coords().values()]
+                nc_domain=sorted([item.replace('nav_lon','longitude').replace('nav_lat','latitude').replace('time_counter','time') for item in nc_domain1])
+                #nc_domain=sorted([item.standard_name for item in this_match.coords().values()])
+                if spatial_domain_cf_list==nc_domain:
+                    #spatial domains match!
+                    ##THIS DOESN'T work for CICE
+                    #try and get the frequency of this variable from the original file name - should be 1d or 1m
+                    match_freq=this_match.properties()['name'].split('_')[1]
+                    if freq == match_freq:
+                        #time domains match
+                        print("Time and spatial domains match")
+                        self.nc_found.append([diag,freq,dims])
+                        return(True)
+
+        else:
+            print(diag+" not found in NC output")
+
+        print("Couldn't find "+diag+" in NC for "+dims+" at "+freq)
+        self.nc_missing.append([diag,freq,dims])
+        return(False)
+
+
     def addOceanDiag(self,diag,freq,dims):
         '''
         add an ocean diagnostic to the ocean XML
         '''
 
+        if check_output:
+            if self.nc_check_ocean(diag,freq,dims):
+                return()
+                import pdb; pdb.set_trace()
+                
         this_freq=self.freq_map[freq]
+
+
+
+
         this_name_suffix=self.get_name_suffix(diag)
         if this_name_suffix==None:
 
@@ -3315,6 +3444,8 @@ def plog(message):
 parser = argparse.ArgumentParser(description='cf_to_um_diagnostics.py adds CF diagnostics to existing UM rose job')
 parser.add_argument('-c', '--config',type=str)   
 parser.add_argument('-s', '--stash',type=str,choices=['um','xios'])
+parser.add_argument('-z', '--check_output')
+
 args = parser.parse_args()
 
 if args.config:
@@ -3327,8 +3458,13 @@ if args.stash:
 else:
     stash_type='um'
 
-
-
+#this option allows use to check the netcdf/pp output 
+check_output=False
+if args.check_output:
+    print("Checking NC output..")
+    import cf
+    nc_output=cf.read(args.check_output+"/*nc")
+    check_output=True
 
 #read in main config file
 main_config=read_config(conf_file)
@@ -3400,6 +3536,47 @@ for line in variable_list:
 #        print("Unknown Realm?")
 #        print(line['realm'])
 #        import pdb; pdb.set_trace()
+
+
+if check_output:
+    if um.nc_missing:
+        print("The following STASH diagnostics are missing from the output")
+        for i in um.nc_missing:
+            print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
+        print("--------------------------")
+    if um.nc_found:
+        print("The following STASH diagnostics were found in the output")
+        for i in um.nc_found:
+            print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
+        print("--------------------------")
+
+
+    if cice.nc_missing:
+        print("The following CICE diagnostics are missing from the output")
+        for i in cice.nc_missing:
+            print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
+        print("--------------------------")
+    if cice.nc_found:
+        print("The following CICE diagnostics were found in the output")
+        for i in cice.nc_found:
+            print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
+        print("--------------------------")
+
+            
+    if nemo.nc_missing:
+        print("The following NEMO diagnostics are missing from the output")
+        for i in nemo.nc_missing:
+            print(f'{i[0]:20}  {i[1]} [{i[2]}] ')
+        print("--------------------------")
+    if nemo.nc_found:
+        print("The following NEMO diagnostics were found in the output")
+        for i in nemo.nc_found:
+            print(f'{i[0]:20}  {i[1]} [{i[2]}] ')
+        print("--------------------------")
+
+    exit()        
+    import pdb; pdb.set_trace()
+
 
 
 um.missing.sort()
