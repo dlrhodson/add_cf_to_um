@@ -1592,8 +1592,7 @@ uuid_name = 'tracking_id'
                 #    nc_domain=sorted([item if item!='model_level_number' else 'alevel' for item in nc_domain])
                 #    nc_domain=sorted([item if item!='model_level_number' else 'alevhalf' for item in nc_domain])
                 if spatial_domain_cf_list==nc_domain:
-                    #spatial domains match!
-                    this_time_domain=this_match.properties()['name'].split('_')[1].replace('6hpt','6hrPt')
+                    #spatial domains matc                    this_time_domain=this_match.properties()['name'].split('_')[1].replace('6hpt','6hrPt')
                     if time_domain_cf == this_time_domain:
                         #time domains match
                         print("Time and spatial domains match")
