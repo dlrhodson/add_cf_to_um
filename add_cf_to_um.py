@@ -3660,18 +3660,25 @@ if check_output:
         for i in um.nc_missing:
             print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
         print("--------------------------")
+    else:
+        print("There were no missing STASH diagnostics")
 
     if nemo.nc_missing:
         print("The following NEMO diagnostics are "+color.BOLD+" missing"+color.END+" from the output")
         for i in nemo.nc_missing:
             print(f'{i[0]:20}  {i[1]} [{i[2]}] ')
         print("--------------------------")
+    else:
+        print("There were no missing NEMO diagnostics")
+
     if cice.nc_missing:
         print("The following CICE diagnostics are "+color.BOLD+" missing"+color.END+" from the output")
         for i in cice.nc_missing:
             print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
         print("--------------------------")
-    
+    else:
+        print("There were no missing CICE diagnostics")
+
     exit()        
 
 
