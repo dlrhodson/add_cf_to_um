@@ -18,6 +18,7 @@ import argparse
 import hashlib
 import logging
 #import uuid
+import glob
 import csv
 import sys
 import re
@@ -3534,6 +3535,44 @@ def plog(message):
     print(message)
     logging.info(message)
     
+
+
+def check_histfreq_issues():
+    '''
+    Checks the files in app/*/opt/ that are referenced in the rose-suite.conf UM_OPT_KEYS
+    if they contain histfreq or histfreq_n these will override attempts by nemo_cice/rose-app.conf to set these
+    and may cause errors in writing CICE data
+    '''
+    histfreq_found=False
+    suite_file=main_config['user']['job_path']+'rose-suite.conf'
+    if not os.path.isfile(suite_file):
+        print("rose-suite.conf does not exist!")
+        import pdb; pdb.set_trace()
+    rose_suite,header=um.read_rose_app_conf(suite_file)
+    if 'UM_OPT_KEYS' in rose_suite['jinja2:suite.rc']:
+        um_opt_keys=rose_suite['jinja2:suite.rc']['UM_OPT_KEYS'].strip("'").split()
+        opt_dirs=glob.glob(main_config['user']['job_path']+'app/*/opt')
+        for um_opt_key in um_opt_keys:
+            for opt_dir in opt_dirs:
+                conf_file=glob.glob(opt_dir+'/rose-app-'+um_opt_key+'.conf')
+                if conf_file:
+                    if len(conf_file)>1:
+                        print("More than one conf file??")
+                        import pdb; pdb.set_trace()
+
+                    #print(conf_file)
+                    with open(conf_file[0]) as file:
+                        for line in file:
+                            if 'histfreq' in line:
+                                print(conf_file[0]+" contains the line "+line)
+                                histfreq_found=True
+
+
+    if histfreq_found:
+        print("These lines will cause problems with adding CICE variables correctly and should be removed")
+        print("opt files thatcontain histfreq or histfreq_n these will override attempts by nemo_cice/rose-app.conf to set these and may cause errors in writing CICE data")
+        exit()
+
     
 
 ##################################
@@ -3563,8 +3602,12 @@ if args.check_output:
     nc_output=cf.read(args.check_output+"/*nc")
     check_output=True
 
+
+    
 #read in main config file
 main_config=read_config(conf_file)
+
+
 
 
 #setup logging file
@@ -3590,6 +3633,21 @@ nemo=Nemo()
 #initialize CICE instance
 cice=CICE()
 
+
+
+#opt keys checks for CICE
+check_histfreq_issues()
+#if not os.path.isfile(
+                
+#Read rise-suite conf
+#get UMP_OPT_KEYS
+#look ober keys
+#read in files in /opt
+#check for histfreq lines
+#if found report and HALT
+
+
+    
 #if not check_stash_eq(um,nemo):
 #    print("XML and UM STASH entries differ!")
 #    import pdb; pdb.set_trace()
