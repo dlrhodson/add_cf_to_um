@@ -1550,8 +1550,8 @@ uuid_name = 'tracking_id'
             spatial_domain_cf_list=sorted(spatial_domain_cf.split(' '))
         else:
             print(stash_code+" found in NC output")
-            if 'height' in spatial_domain_cf:
-                import pdb; pdb.set_trace()
+            #if 'height' in spatial_domain_cf:
+            #    import pdb; pdb.set_trace()
 
             #does this have the required domain?
             #We need to remap some of the requested dimension to what the model actually writes out
@@ -1590,7 +1590,12 @@ uuid_name = 'tracking_id'
                     # if the domain contains veg and surface types -this is a pseudo level
                     new_name='pseudo'
                     nc_domain=sorted([item if item!='long_name=Land and Vegetation Surface types' else new_name for item in nc_domain])
-                    
+
+                if 'height' in nc_domain:
+                    #domain contains a height coordinate
+                    if this_match.coord('height').size==1:
+                        #this is a single level - hence we can ignore here
+                        nc_domain=sorted([item for item in nc_domain if item!='height'])
                 #if 'model_level_number' in nc_domain:
                 #    nc_domain=sorted([item if item!='model_level_number' else 'alevel' for item in nc_domain])
                 #    nc_domain=sorted([item if item!='model_level_number' else 'alevhalf' for item in nc_domain])
