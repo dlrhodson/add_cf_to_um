@@ -283,7 +283,7 @@ def add_cf_diagnostic(diag,freq,dims):
                 if diag==um_diag:
                     #this is the should never happen!
                     import pdb; pdb.set_trace()
-                plog("Add "+um_diag)
+                #plog("Add "+um_diag)
                 um.add_stash(um_diag,freq,dims)
                
                 
@@ -295,7 +295,7 @@ def add_cf_diagnostic(diag,freq,dims):
                 if diag==um_diag:
                     #this is the should never happen!
                     import pdb; pdb.set_trace()
-                plog("Add "+um_diag)
+                #plog("Add "+um_diag)
                 um.add_stash(um_diag,freq,dims)
                
                 #um.add_stash(um_diag,freq,dims)
@@ -1294,7 +1294,8 @@ uuid_name = 'tracking_id'
 
     def get_domain(self,stash_code,spatial_domain_cf):
         #checks to see if the domain defined by spatial_domain_cf matches what is required by stash_code
-        #and returns the correct domain name, if possibl
+        #and returns the correct domain name, if possible
+        #also now returns the spatial_domain_cf, as we sometimes have to modify this (mainly for check_output)
         spatial_domain=self.rose_space_domain_mappings[spatial_domain_cf]
 
         this_stash=self.stash_levels[stash_code]
@@ -1303,15 +1304,25 @@ uuid_name = 'tracking_id'
         sc_level=this_stash['LevelT']
         sc_pseudo_level=this_stash['PseudT']
 
+        
+        #if sc_pseudo_level is NOT 0 then this stash_code uses pseudo levels - add to the spatial_domain_cf
+        if sc_pseudo_level!=0:
+      
+            if not 'pseudo' in spatial_domain_cf:
+                spatial_domain_cf+=' pseudo'
+            
+        
         #do we already have a mapping for this?
         if 'domains' in main_config:
-           user_domains=main_config['domains']
-           if stash_code in user_domains:
-              #a mapping is defined in the config
-              spatial_domain=user_domains[stash_code]
-              plog("A domain mapping for "+stash_code+" was found in "+conf_file+": "+spatial_domain+" -will use this")
-              return(spatial_domain)
-           #there is a domains section defined in the config file
+            user_domains=main_config['domains']
+            if stash_code in user_domains:
+
+            
+                #a mapping is defined in the config
+                spatial_domain=user_domains[stash_code]
+                plog("A domain mapping for "+stash_code+" was found in "+conf_file+": "+spatial_domain+" -will use this")
+                return(spatial_domain,spatial_domain_cf)
+            #there is a domains section defined in the config file
            
 
         #does this spatial_domain use the correct levels that this stash_code is output on?
@@ -1320,47 +1331,55 @@ uuid_name = 'tracking_id'
             if (this_stash_level==3) and (sc_level==2):
                 #this request is on pressure levels - OK for theta and rho levels as they will be regridded
                 plog("rho levels will be converted to pressure levels")
+                import pdb; pdb.set_trace()
                 #logging.info("rho levels will be converted to pressure levels")
             elif (this_stash_level==3) and (sc_level==1):
                 #this request is on pressure levels - OK for theta and rho levels as they will be regridded
                 plog("theta levels will be converted to pressure levels")
+                import pdb; pdb.set_trace()
+
                 #logging.info("theta levels will be converted to pressure levels")
             else:
                 plog("Request is for "+stash_code+" using "+spatial_domain+" but this uses level="+str(this_stash_level)+" but "+str(stash_code)+" is output on level="+str(sc_level))
                 #logging.info("Request is for "+stash_code+" using "+spatial_domain+" but this uses level="+str(this_stash_level)+" but "+str(stash_code)+" is output on level="+str(self.stash_levels[stash_code]))
+                #import pdb; pdb.set_trace()
                 if (this_stash_level==1) and (sc_level==2):
                     if spatial_domain==self.space_mappings['longitude latitude alevhalf time']:
                         plog("switching output from "+self.space_mappings['longitude latitude alevhalf time']+" to "+self.space_mappings['longitude latitude alevel time'])
                         #plog(ostr)
                         #logging.info(ostr)
-                        spatial_domain=self.space_mappings['longitude latitude alevel time']
+                        spatial_domain_cf='longitude latitude alevel time'
+                        spatial_domain=self.space_mappings[spatial_domain_cf]
                 elif (this_stash_level==2) and (sc_level==1):
                     if spatial_domain==self.space_mappings['longitude latitude alevel time']:
                         plog("switching output from "+self.space_mappings['longitude latitude alevel time']+" to "+self.space_mappings['longitude latitude alevhalf time'])
                         #print(ostr)
                         #logging.info(ostr)
-                        spatial_domain=self.space_mappings['longitude latitude alevhalf time']
+                        spatial_domain_cf='longitude latitude alevhalf time'
+                        spatial_domain=self.space_mappings[spatial_domain_cf]
                 elif (this_stash_level==1) and (sc_level==5):
                     #requested on RHO but this is a single level field - switch to 'DIAG'
                     plog("switching output from "+self.space_mappings['longitude latitude alevhalf time']+" to "+self.space_mappings['longitude latitude time'])
                     #print(ostr)
                     #logging.info(ostr)
-
-                    spatial_domain=self.space_mappings['longitude latitude time']
+                    spatial_domain_cf='longitude latitude time'
+                    spatial_domain=self.space_mappings[spatial_domain_cf]
                 elif (this_stash_level==2) and (sc_level==5):
                     #requested on RHO but this is a single level field - switch to 'DIAG'
                     plog("switching output from "+self.space_mappings['longitude latitude alevel time']+" to "+self.space_mappings['longitude latitude time'])  
                     #print(ostr)
                     #logging.info(ostr)
-
-                    spatial_domain=self.space_mappings['longitude latitude time']
+                    spatial_domain_cf='longitude latitude time'
+                    spatial_domain=self.space_mappings[spatial_domain_cf]
                 elif (this_stash_level==5) and (sc_level==6):
                     #this is probably a soil diagnostic that is being integrated over levels
                     #allow the level 6 (soil) levels to override
                     plog("Allow soil diagnostic to be output on all soil levels")
                     if "'DSOIL'" in self.rose_space_domain_mappings.values():
                         spatial_domain="'DSOIL'"
+                        spatial_domain_cf+=' sdepth'
                         plog("Converted space domain to 'DSOIL'")
+
                     else:
                         print("Need DSOIL domain for this diagnostics, but not available???")
                         import pdb; pdb.set_trace()
@@ -1441,7 +1460,7 @@ uuid_name = 'tracking_id'
                  print("Pseudo level range  not found in CMIP6 Domains")
                  print("Need to define a domain usage in "+main_config['user']['log_file'].strip("'")+" under a [domains] section")
                  exit()
-        return(spatial_domain)
+        return(spatial_domain,spatial_domain_cf)
 
 
     def get_time_domain(self,time_domain_cf,options,spatial_domain):
@@ -1522,9 +1541,13 @@ uuid_name = 'tracking_id'
         print("Check output")
         #the split is because multiple occurrences of a stash code in a netcdf file will be appended with _2 _3 etc
         #we just want to check the stash code part
+        #if 'pseudo' in spatial_domain_cf:
+        #    import pdb; pdb.set_trace()
+
         matches=[key for key in nc_output if key.nc_get_variable().split('_')[0]==stash_code]
         if not matches:
             print(stash_code+" not found in NC output")
+            spatial_domain_cf_list=sorted(spatial_domain_cf.split(' '))
         else:
             print(stash_code+" found in NC output")
             #does this have the required domain?
@@ -1534,16 +1557,16 @@ uuid_name = 'tracking_id'
                           'alevhalf':'model_level_number',
                           'alevel':'model_level_number',
                           'sdepth1':'depth',                          
-                          'sdepth':'depth'
+                          'sdepth':'depth',
                           'typesi':''
                           }
             spatial_domain_cf_adjusted=spatial_domain_cf
             for torep in replacements:
                 rep=replacements[torep]
                 spatial_domain_cf_adjusted=spatial_domain_cf_adjusted.replace(torep,rep)
-           
+
+            
             #strip out any empty strings following replacement                                                             
-            spatial_domain_cf_adjusted=[item for item in spatial_domain_cf_adjusted if item!='']
 
             #.replace('height10m','height').replace('height2m','height').replace('alevhalf','model_level_number').replace('alevel','model_level_number')
             spatial_domain_cf_list=sorted(spatial_domain_cf_adjusted.split(' '))
@@ -1560,6 +1583,11 @@ uuid_name = 'tracking_id'
                     # if the domain contains air pressure - let's guess what the original plev was!
                     new_name='plev'+str(this_match.coord('air_pressure').size)
                     nc_domain=sorted([item if item!='air_pressure' else new_name for item in nc_domain])
+                if 'long_name=Land and Vegetation Surface types' in nc_domain:
+                    # if the domain contains veg and surface types -this is a pseudo level
+                    new_name='pseudo'
+                    nc_domain=sorted([item if item!='long_name=Land and Vegetation Surface types' else new_name for item in nc_domain])
+                    
                 #if 'model_level_number' in nc_domain:
                 #    nc_domain=sorted([item if item!='model_level_number' else 'alevel' for item in nc_domain])
                 #    nc_domain=sorted([item if item!='model_level_number' else 'alevhalf' for item in nc_domain])
@@ -1603,11 +1631,21 @@ uuid_name = 'tracking_id'
         #default time domains
         
 
-        spatial_domain=self.get_domain(stash_code,spatial_domain_cf)
+        spatial_domain,spatial_domain_cf=self.get_domain(stash_code,spatial_domain_cf)
+
+        if check_output:
+            self.nc_check_stash(stash_code,time_domain_cf,spatial_domain_cf)
+            #if this returns true - the the stash code exists with this time and space domain in the netcdf
+            return()
+
+        plog("Add "+stash_code)
         
         time_domain=self.get_time_domain(time_domain_cf,options,spatial_domain)
         #import pdb; pdb.set_trace()
-           
+
+        if stash_code=='m01s03i317':
+            import pdb; pdb.set_trace()
+
         
 
         if 'blev' in options:
@@ -1671,10 +1709,11 @@ uuid_name = 'tracking_id'
                     plog(stash_code+" already exists in "+self.rose_stash+" with "+time_domain+" and "+spatial_domain+" so no need to add anything")
                     #logging.info(stash_code+" already exists at "+time_domain+" and "+spatial_domain)
                     
-                    if check_output:
-                        if self.nc_check_stash(stash_code,time_domain_cf,spatial_domain_cf):
-                            #if this returns true - the the stash code exists with this time and space domain in the netcdf
-                            return()
+                    #if check_output:
+                    #    import pdb; pdb.set_trace()
+                    #   if self.nc_check_stash(stash_code,time_domain_cf,spatial_domain_cf):
+                    #        #if this returns true - the the stash code exists with this time and space domain in the netcdf
+                    #        return()
                             
                             
                     break
