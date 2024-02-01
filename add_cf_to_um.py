@@ -1543,7 +1543,7 @@ uuid_name = 'tracking_id'
         #we just want to check the stash code part
         #if 'pseudo' in spatial_domain_cf:
         #    import pdb; pdb.set_trace()
-
+        
         matches=[key for key in nc_output if key.nc_get_variable().split('_')[0]==stash_code]
         if not matches:
             print(stash_code+" not found in NC output")
@@ -1592,7 +1592,8 @@ uuid_name = 'tracking_id'
                 #    nc_domain=sorted([item if item!='model_level_number' else 'alevel' for item in nc_domain])
                 #    nc_domain=sorted([item if item!='model_level_number' else 'alevhalf' for item in nc_domain])
                 if spatial_domain_cf_list==nc_domain:
-                    #spatial domains matc                    this_time_domain=this_match.properties()['name'].split('_')[1].replace('6hpt','6hrPt')
+                    #spatial domains matc
+                    this_time_domain=this_match.properties()['name'].split('_')[1].replace('6hpt','6hrPt')
                     if time_domain_cf == this_time_domain:
                         #time domains match
                         print("Time and spatial domains match")
