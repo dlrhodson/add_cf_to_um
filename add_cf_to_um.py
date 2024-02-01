@@ -12,6 +12,7 @@
 
 from copy import deepcopy
 import lxml.etree as ET
+#import xml.etree.ElementTree as ET
 import configparser
 import argparse
 import hashlib
@@ -407,7 +408,6 @@ class UM:
         self.stashMap.optionxform = lambda option: option
         self.configFilePath = main_config['main']['mappings']
         #stashMap.read(configFilePath)
-
         self.read_stash_mappings()
         self.read_STASHmaster_A_levels()
         #main rose-app.conf for this Job
@@ -421,7 +421,6 @@ class UM:
             print(umOrXIOS+" is not a valid UM class type")
             import pdb; pdb.set_trace()
 
-            
         self.rose,self.rose_header=self.read_rose_app_conf(self.rose_stash)
         #rose,rose_header=self.read_rose_app_conf(rose_stash)
         #CMIP6 map
@@ -1521,27 +1520,62 @@ uuid_name = 'tracking_id'
 
     def nc_check_stash(self,stash_code,time_domain_cf,spatial_domain_cf):
         print("Check output")
-        matches=[key for key in nc_output if key.nc_get_variable()==stash_code]
+        #the split is because multiple occurrences of a stash code in a netcdf file will be appended with _2 _3 etc
+        #we just want to check the stash code part
+        matches=[key for key in nc_output if key.nc_get_variable().split('_')[0]==stash_code]
         if not matches:
             print(stash_code+" not found in NC output")
         else:
             print(stash_code+" found in NC output")
             #does this have the required domain?
-            spatial_domain_cf_list=sorted(spatial_domain_cf.split(' '))
+            #We need to remap some of the requested dimension to what the model actually writes out
+            replacements={'height10m':'',
+                          'height2m':'',
+                          'alevhalf':'model_level_number',
+                          'alevel':'model_level_number',
+                          'sdepth1':'depth',                          
+                          'sdepth':'depth'
+                          'typesi':''
+                          }
+            spatial_domain_cf_adjusted=spatial_domain_cf
+            for torep in replacements:
+                rep=replacements[torep]
+                spatial_domain_cf_adjusted=spatial_domain_cf_adjusted.replace(torep,rep)
+           
+            #strip out any empty strings following replacement                                                             
+            spatial_domain_cf_adjusted=[item for item in spatial_domain_cf_adjusted if item!='']
+
+            #.replace('height10m','height').replace('height2m','height').replace('alevhalf','model_level_number').replace('alevel','model_level_number')
+            spatial_domain_cf_list=sorted(spatial_domain_cf_adjusted.split(' '))
+            #spatial_domain_cf_list=sorted(spatial_domain_cf.split(' '))
+
+            #strip out any empty strings following replacement                                                             
+            spatial_domain_cf_list=[item for item in spatial_domain_cf_list if item!='']
+
 
             for this_match in matches:
-
-                nc_domain=sorted([item.standard_name for item in this_match.coords().values()])
+                nc_domain=sorted([item.identity() for item in this_match.coords().values()])
+                #nc_domain=sorted([item.standard_name for item in this_match.coords().values()])
+                if 'air_pressure' in nc_domain:
+                    # if the domain contains air pressure - let's guess what the original plev was!
+                    new_name='plev'+str(this_match.coord('air_pressure').size)
+                    nc_domain=sorted([item if item!='air_pressure' else new_name for item in nc_domain])
+                #if 'model_level_number' in nc_domain:
+                #    nc_domain=sorted([item if item!='model_level_number' else 'alevel' for item in nc_domain])
+                #    nc_domain=sorted([item if item!='model_level_number' else 'alevhalf' for item in nc_domain])
                 if spatial_domain_cf_list==nc_domain:
                     #spatial domains match!
-                    if time_domain_cf == this_match.properties()['name'].split('_')[-1]:
+                    this_time_domain=this_match.properties()['name'].split('_')[1].replace('6hpt','6hrPt')
+                    if time_domain_cf == this_time_domain:
                         #time domains match
                         print("Time and spatial domains match")
                         um.nc_found.append([stash_code,time_domain_cf,spatial_domain_cf])
                         return(True)
         #if we get to here, there were no matches!
-        print("Couldn't find "+stash_code+" in NC for "+spatial_domain_cf+" at "+time_domain_cf)
+        print("Couldn't find "+stash_code+" in NC for "+' '.join(spatial_domain_cf_list)+" at "+time_domain_cf)
         self.nc_missing.append([stash_code,time_domain_cf,spatial_domain_cf])
+        #import pdb; pdb.set_trace()
+
         return(False)
      
     def add_stash(self,stash_code0,time_domain_cf,spatial_domain_cf):
@@ -2543,17 +2577,30 @@ class Nemo:
     
     def nc_check_ocean(self,diag,freq,dims):
         print("Check Ocean output")
+
+        if diag=='ficeberg' and 'olevel' in dims:
+            print("ficeberg is actually a 2d field - adjusting")
+            dims=dims.replace('olevel','')
+        
+        if diag=='vowflisf' and not 'olevel' in dims:
+            print("vowflisf is actually written out on ocean levels - adjusting")
+            dims=dims+' olevel'
         matches=[key for key in nc_output if key.nc_get_variable()==diag]
         if matches:
             print(diag+" found in NC output")
             #import pdb; pdb.set_trace()
             #does this have the required domain?
-            spatial_domain_cf_list=sorted(dims.split())
+
+            #this is slightly odd - but basin is not a dimension, and these basin indices retain longitude for some reason!
+            spatial_domain_cf_adjusted=dims.replace('basin','longitude')
+            spatial_domain_cf_list=sorted(spatial_domain_cf_adjusted.split())
+
+            #spatial_domain_cf_list=sorted(dims.split())
             ##HERE
             ## SPATIAL domain doesn't map perfectly as ICE is IJ not long lat!
             for this_match in matches:
                 nc_domain1=[item.nc_get_variable() for item in this_match.coords().values()]
-                nc_domain=sorted([item.replace('nav_lon','longitude').replace('nav_lat','latitude').replace('time_counter','time') for item in nc_domain1])
+                nc_domain=sorted([item.replace('nav_lon','longitude').replace('nav_lat','latitude').replace('time_counter','time').replace('deptht','olevel').replace('depthu','olevel').replace('depthv','olevel').replace('depthw','olevel')  for item in nc_domain1])
                 #nc_domain=sorted([item.standard_name for item in this_match.coords().values()])
                 if spatial_domain_cf_list==nc_domain:
                     #spatial domains match!
@@ -3537,7 +3584,6 @@ for line in variable_list:
 #        print(line['realm'])
 #        import pdb; pdb.set_trace()
 
-
 if check_output:
     if um.nc_missing:
         print("The following STASH diagnostics are missing from the output")
@@ -3575,7 +3621,6 @@ if check_output:
         print("--------------------------")
 
     exit()        
-    import pdb; pdb.set_trace()
 
 
 
