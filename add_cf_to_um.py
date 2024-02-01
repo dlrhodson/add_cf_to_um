@@ -1550,6 +1550,9 @@ uuid_name = 'tracking_id'
             spatial_domain_cf_list=sorted(spatial_domain_cf.split(' '))
         else:
             print(stash_code+" found in NC output")
+            if 'height' in spatial_domain_cf:
+                import pdb; pdb.set_trace()
+
             #does this have the required domain?
             #We need to remap some of the requested dimension to what the model actually writes out
             replacements={'height10m':'',
