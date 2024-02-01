@@ -3633,41 +3633,45 @@ for line in variable_list:
 #        import pdb; pdb.set_trace()
 
 if check_output:
-    if um.nc_missing:
-        print("The following STASH diagnostics are missing from the output")
-        for i in um.nc_missing:
-            print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
-        print("--------------------------")
+    print("")
+    print("")
     if um.nc_found:
         print("The following STASH diagnostics were found in the output")
         for i in um.nc_found:
             print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
         print("--------------------------")
-
-
-    if cice.nc_missing:
-        print("The following CICE diagnostics are missing from the output")
-        for i in cice.nc_missing:
-            print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
-        print("--------------------------")
-    if cice.nc_found:
-        print("The following CICE diagnostics were found in the output")
-        for i in cice.nc_found:
-            print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
-        print("--------------------------")
-
-            
-    if nemo.nc_missing:
-        print("The following NEMO diagnostics are missing from the output")
-        for i in nemo.nc_missing:
-            print(f'{i[0]:20}  {i[1]} [{i[2]}] ')
-        print("--------------------------")
+        
     if nemo.nc_found:
         print("The following NEMO diagnostics were found in the output")
         for i in nemo.nc_found:
             print(f'{i[0]:20}  {i[1]} [{i[2]}] ')
         print("--------------------------")
 
+    if cice.nc_found:
+        print("The following CICE diagnostics were found in the output")
+        for i in cice.nc_found:
+            print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
+        print("--------------------------")
+
+    print("")
+            
+    if um.nc_missing:
+        print("The following STASH diagnostics are "+color.BOLD+" missing"+color.END+"from the output")
+        for i in um.nc_missing:
+            print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
+        print("--------------------------")
+
+    if nemo.nc_missing:
+        print("The following NEMO diagnostics are "+color.BOLD+" missing"+color.END+" from the output")
+        for i in nemo.nc_missing:
+            print(f'{i[0]:20}  {i[1]} [{i[2]}] ')
+        print("--------------------------")
+    if cice.nc_missing:
+        print("The following CICE diagnostics are "+color.BOLD+" missing"+color.END+" from the output")
+        for i in cice.nc_missing:
+            print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
+        print("--------------------------")
+    
     exit()        
 
 
