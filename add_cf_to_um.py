@@ -238,7 +238,9 @@ def add_nemo_cice_diagnostic(diag,freq,dims):
            print("Too many  matches of "+diag+" in the comment fields!")
            import pdb; pdb.set_trace()
 
-                             
+
+    if check_output:
+        nemo.nc_check_ocean(diag,freq,dims)
     #if we are here - we didn't find the diag anywhere!
     plog(diag+" not found in anywhere in NEMO diagnostics definitions")
     nemo.missing.append(diag)
@@ -2674,9 +2676,8 @@ class Nemo:
         '''
 
         if check_output:
-            if self.nc_check_ocean(diag,freq,dims):
-                return()
-                import pdb; pdb.set_trace()
+            self.nc_check_ocean(diag,freq,dims)
+            return()
                 
         this_freq=self.freq_map[freq]
 
