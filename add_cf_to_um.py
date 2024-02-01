@@ -1653,9 +1653,6 @@ uuid_name = 'tracking_id'
         time_domain=self.get_time_domain(time_domain_cf,options,spatial_domain)
         #import pdb; pdb.set_trace()
 
-        if stash_code=='m01s03i317':
-            import pdb; pdb.set_trace()
-
         
 
         if 'blev' in options:
@@ -2150,6 +2147,9 @@ class CICE:
     def nc_check_ice(self,fdiag,freq,dims):
         print("Check Ice output")
         #CICE doesn't have sea ice types, or classes, so remove this dimension
+        if 'present' in fdiag:
+            fdiag='f_ice_present'
+
         dims=dims.replace('typesi','')
         diag=fdiag.replace('f_','')
         matches=[key for key in nc_output if key.nc_get_variable()==diag]
@@ -2161,8 +2161,10 @@ class CICE:
             ##HERE
             ## SPATIAL domain doesn't map perfectly as ICE is IJ not long lat!
             for this_match in matches:
-                nc_domain1=[item.nc_get_variable() for item in this_match.coords().values()]
-                nc_domain=sorted([item.replace('TLON','longitude').replace('TLAT','latitude') for item in nc_domain1])
+                nc_domain=[item.nc_get_variable() for item in this_match.coords().values()]
+                nc_domain=sorted([item.replace('TLON','longitude').replace('TLAT','latitude') for item in nc_domain])
+                nc_domain=sorted([item.replace('ULON','longitude').replace('ULAT','latitude') for item in nc_domain])
+                nc_domain=sorted([item.replace('VLON','longitude').replace('VLAT','latitude') for item in nc_domain])
                 #nc_domain=sorted([item.standard_name for item in this_match.coords().values()])
                 if spatial_domain_cf_list==nc_domain:
                     #spatial domains match!
