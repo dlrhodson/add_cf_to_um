@@ -3635,26 +3635,8 @@ cice=CICE()
 
 
 
-#opt keys checks for CICE
+#Check that the opt/ files DO NOT contain any histfreq entries - these will break the CICE outputs
 check_histfreq_issues()
-#if not os.path.isfile(
-                
-#Read rise-suite conf
-#get UMP_OPT_KEYS
-#look ober keys
-#read in files in /opt
-#check for histfreq lines
-#if found report and HALT
-
-
-    
-#if not check_stash_eq(um,nemo):
-#    print("XML and UM STASH entries differ!")
-#    import pdb; pdb.set_trace()
-
-   
-
-#---------------------
 
 
 
