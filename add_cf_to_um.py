@@ -1566,6 +1566,9 @@ uuid_name = 'tracking_id'
                           'sdepth':'depth',
                           'typesi':''
                           }
+            
+            output_replacements={'atmosphere_hybrid_height_coordinate':'model_level_number',
+                                 }
             spatial_domain_cf_adjusted=spatial_domain_cf
             for torep in replacements:
                 rep=replacements[torep]
@@ -1584,6 +1587,10 @@ uuid_name = 'tracking_id'
 
             for this_match in matches:
                 nc_domain=sorted([item.identity() for item in this_match.coords().values()])
+                for torep in output_replacements:
+                    rep=output_replacements[torep]
+                    nc_domain=nc_domain.replace(torep,rep)
+
                 #nc_domain=sorted([item.standard_name for item in this_match.coords().values()])
                 if 'air_pressure' in nc_domain:
                     # if the domain contains air pressure - let's guess what the original plev was!
