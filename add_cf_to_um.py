@@ -2156,7 +2156,6 @@ class CICE:
         matches=[key for key in nc_output if key.nc_get_variable()==diag]
         if matches:
             print(diag+" found in NC output")
-            #import pdb; pdb.set_trace()
             #does this have the required domain?
             spatial_domain_cf_list=sorted(dims.split())
             ##HERE
@@ -2167,6 +2166,12 @@ class CICE:
                 nc_domain=sorted([item.replace('ULON','longitude').replace('ULAT','latitude') for item in nc_domain])
                 nc_domain=sorted([item.replace('VLON','longitude').replace('VLAT','latitude') for item in nc_domain])
                 #nc_domain=sorted([item.standard_name for item in this_match.coords().values()])
+                #if we have i,j domain indices, just remove them!
+                if 'nj' in nc_domain:
+                    nc_domain.remove('nj')
+                if 'ni' in nc_domain:
+                    nc_domain.remove('ni')
+                
                 if spatial_domain_cf_list==nc_domain:
                     #spatial domains match!
                     ##THIS DOESN'T work for CICE
@@ -3636,7 +3641,8 @@ cice=CICE()
 
 
 #Check that the opt/ files DO NOT contain any histfreq entries - these will break the CICE outputs
-check_histfreq_issues()
+if not check_output:
+    check_histfreq_issues()
 
 
 
