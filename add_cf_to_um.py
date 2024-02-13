@@ -2177,7 +2177,9 @@ class CICE:
                     ##THIS DOESN'T work for CICE
                     #try and get the frequency of this variable from the original file name - should be 1d or 1m
                     match_freq=this_match.get_filenames().pop().split('_')[-2]
-                    if freq == self.freq_map[match_freq]:
+                    if match_freq in self.freq_map:
+                        match_freq=self.freq_map[match_freq]
+                    if freq == match_freq:
                         #time domains match
                         print("Time and spatial domains match")
                         self.nc_found.append([diag,freq,dims])
