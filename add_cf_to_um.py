@@ -1589,7 +1589,9 @@ uuid_name = 'tracking_id'
                 nc_domain=sorted([item.identity() for item in this_match.coords().values()])
                 for torep in output_replacements:
                     rep=output_replacements[torep]
-                    nc_domain=nc_domain.replace(torep,rep)
+                    #import pdb; pdb.set_trace()
+                    nc_domain=[rep if x==torep else x for x in nc_domain]
+                    ##FIX THIS##
 
                 #nc_domain=sorted([item.standard_name for item in this_match.coords().values()])
                 if 'air_pressure' in nc_domain:
