@@ -1601,7 +1601,8 @@ uuid_name = 'tracking_id'
 
             
             for this_match in matches:
-                nc_domain=sorted([item.identity() for item in this_match.coords().values()])
+                #get list of unique domain names
+                nc_domain=sorted(list(set(([item.identity() for item in this_match.coords().values()]))))
                 #check to see if there are any unexpected dimension names in this list
     
                 for torep in um.output_replacements:
@@ -1610,6 +1611,9 @@ uuid_name = 'tracking_id'
                     nc_domain=[rep if x==torep else x for x in nc_domain]
                     ##FIX THIS##
                 unexpected_names=list(set(nc_domain)-set(model_dimensions))
+                unexpected_names=[x for x in unexpected_names if x!='air_pressure']
+                unexpected_names=[x for x in unexpected_names if x!='height']
+                                 
                 if len(unexpected_names)>0:
                     #get here if unexpected_names is a NON-empty list!
                     print("Unexpected domain names")
@@ -1636,6 +1640,12 @@ uuid_name = 'tracking_id'
                     if this_match.coord('height').size==1:
                         #this is a single level - hence we can ignore here
                         nc_domain=sorted([item for item in nc_domain if item!='height'])
+
+                
+
+
+
+                    
                 #if 'model_level_number' in nc_domain:
                 #    nc_domain=sorted([item if item!='model_level_number' else 'alevel' for item in nc_domain])
                 #    nc_domain=sorted([item if item!='model_level_number' else 'alevhalf' for item in nc_domain])
