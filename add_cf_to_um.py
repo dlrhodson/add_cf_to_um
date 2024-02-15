@@ -1622,7 +1622,7 @@ uuid_name = 'tracking_id'
                     print("Add a domain_names item to the [user] section of the config file")
                     print("For example:")
                     print("domain_names='long_name=Land and Vegetation Surface types:pseudo'")
-                    
+                    exit()
                     import pdb; pdb.set_trace()
 
                 #nc_domain=sorted([item.standard_name for item in this_match.coords().values()])
@@ -1642,8 +1642,8 @@ uuid_name = 'tracking_id'
                         nc_domain=sorted([item for item in nc_domain if item!='height'])
 
                 
-
-
+                nc_domain.sort()
+                spatial_domain_cf_list.sort()
 
                     
                 #if 'model_level_number' in nc_domain:
@@ -1651,7 +1651,10 @@ uuid_name = 'tracking_id'
                 #    nc_domain=sorted([item if item!='model_level_number' else 'alevhalf' for item in nc_domain])
                 if spatial_domain_cf_list==nc_domain:
                     #spatial domains matc
-                    this_time_domain=this_match.properties()['name'].split('_')[1].replace('6hpt','6hrPt')
+                    #check and replace 6hr_pt etc
+                    this_time_domain=this_match.properties()['name'].split('a_')[1].replace('6hpt','6hrPt').replace('6hr_pt','6hrPt')
+                    #split for other freq
+                    this_time_domain=this_time_domain.split('_')[0]
                     if time_domain_cf == this_time_domain:
                         #time domains match
                         print("Time and spatial domains match")
