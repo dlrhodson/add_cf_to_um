@@ -449,6 +449,18 @@ class UM:
         #matrix mapping time and space to USAGE for output
         self.get_use_matrix()
 
+        #these are the mappings from the model output domain name to common names
+        self.output_replacements={'atmosphere_hybrid_height_coordinate':'model_level_number'}
+        #we allow the user to add extra mappings in the config file under [user]:domain_names
+        if 'domain_names' in main_config['user']:
+                
+            extra_replacements=main_config['user']['domain_names'].replace("'",'').replace('"','').split(',')
+            for extra_rep in extra_replacements:
+                rep_key,rep_val=extra_rep.split(':')
+                self.output_replacements[rep_key]=rep_val
+
+
+        
         #create mappings for time domain cmip6 -> rose
         #use the initial mappings for cf_time -> stash time domain label in freq_mappings
         #find this domain label in the cmip6 reference, then check to see if any domain usages in rose is IDENTICAL (in terms of namelist)
@@ -1566,9 +1578,12 @@ uuid_name = 'tracking_id'
                           'sdepth':'depth',
                           'typesi':''
                           }
+            model_dimensions=['latitude','longitude','depth','model_level_number','height','time','pseudo']
+ #           output_replacements={'atmosphere_hybrid_height_coordinate':'model_level_number',
+ #                                'long_name=Land and Vegetation Surface types':'pseudo'
+ #                                }
+ 
             
-            output_replacements={'atmosphere_hybrid_height_coordinate':'model_level_number',
-                                 }
             spatial_domain_cf_adjusted=spatial_domain_cf
             for torep in replacements:
                 rep=replacements[torep]
@@ -1580,28 +1595,41 @@ uuid_name = 'tracking_id'
             #.replace('height10m','height').replace('height2m','height').replace('alevhalf','model_level_number').replace('alevel','model_level_number')
             spatial_domain_cf_list=sorted(spatial_domain_cf_adjusted.split(' '))
             #spatial_domain_cf_list=sorted(spatial_domain_cf.split(' '))
-
+            
             #strip out any empty strings following replacement                                                             
             spatial_domain_cf_list=[item for item in spatial_domain_cf_list if item!='']
 
-
+            
             for this_match in matches:
                 nc_domain=sorted([item.identity() for item in this_match.coords().values()])
-                for torep in output_replacements:
-                    rep=output_replacements[torep]
+                #check to see if there are any unexpected dimension names in this list
+    
+                for torep in um.output_replacements:
+                    rep=um.output_replacements[torep]
                     #import pdb; pdb.set_trace()
                     nc_domain=[rep if x==torep else x for x in nc_domain]
                     ##FIX THIS##
+                unexpected_names=list(set(nc_domain)-set(model_dimensions))
+                if len(unexpected_names)>0:
+                    #get here if unexpected_names is a NON-empty list!
+                    print("Unexpected domain names")
+                    print(' '.join(unexpected_names))
+                    print("Expected names are: "+' '.join(model_dimensions))
+                    print("Add a domain_names item to the [user] section of the config file")
+                    print("For example:")
+                    print("domain_names='long_name=Land and Vegetation Surface types:pseudo'")
+                    
+                    import pdb; pdb.set_trace()
 
                 #nc_domain=sorted([item.standard_name for item in this_match.coords().values()])
                 if 'air_pressure' in nc_domain:
                     # if the domain contains air pressure - let's guess what the original plev was!
                     new_name='plev'+str(this_match.coord('air_pressure').size)
                     nc_domain=sorted([item if item!='air_pressure' else new_name for item in nc_domain])
-                if 'long_name=Land and Vegetation Surface types' in nc_domain:
-                    # if the domain contains veg and surface types -this is a pseudo level
-                    new_name='pseudo'
-                    nc_domain=sorted([item if item!='long_name=Land and Vegetation Surface types' else new_name for item in nc_domain])
+                #if 'long_name=Land and Vegetation Surface types' in nc_domain:
+                #    # if the domain contains veg and surface types -this is a pseudo level
+                #    new_name='pseudo'
+                #    nc_domain=sorted([item if item!='long_name=Land and Vegetation Surface types' else new_name for item in nc_domain])
 
                 if 'height' in nc_domain:
                     #domain contains a height coordinate
