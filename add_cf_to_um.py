@@ -937,13 +937,21 @@ uuid_name = 'tracking_id'
             exit()
  
         with open(configFilePath) as stream:
-            header,config_string=stream.read().split('\n',1)
+            header=''
+            config_string=stream.read()
             
-            if '[' in header:
-                 config.read_string(header+'\n'+config_string)
-                 header=''
-            else:
-                config.read_string(config_string)
+            #loop over config string removing the first line at each pass
+            #if the first line does not start with a bracket, it must be a header line, not a config line
+            #store this in the header string and move on
+            #if it DOES contain a [ it must be a config line, so patch back together, read the config and
+            #pass the head and config back
+            while True:
+                tmp,config_string=config_string.split('\n',1)
+                if '[' in tmp:
+                    config.read_string(tmp+'\n'+config_string)
+                    break
+                else:
+                    header+=tmp
             #config.read_string("[DUMMY]\n" + stream.read())
         return(config,header)
 
