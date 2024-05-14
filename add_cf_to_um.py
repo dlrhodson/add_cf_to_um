@@ -3802,9 +3802,7 @@ plog(bold("UM diagnostics unable to add: "+' '.join(um.missing)))
 plog(bold("Nemo diagnostics unable to add: "+' '.join(nemo.missing)))
 plog(bold("CICE diagnostics unable to add: "+' '.join(cice.missing)))
 print("----------------------")
-plog(bold("UM diagnostics added: "+' '.join(um.added)))
-plog(bold("NEMO diagnostics added: "+' '.join(nemo.added)))
-plog(bold("CICE diagnostics added: "+' '.join(cice.added)))
+
 
 #write diagnostics definition files
 #extract job name from filename
@@ -3813,15 +3811,36 @@ jobname=re.search(pattern,um.rose_stash).group(1)
 #jobname=re.search(pattern,main_config['user']['job_path']).group(1)
 ice_conf="app/nemo_cice/rose-app.conf"
 um_nemo_conf="app/xml/rose-app.conf"
-#ice_output_filename=jobname+'_'+ice_conf.replace('/','__')
-### NOT OUTPUTTING CORRECT UM CONF!!!
 um_output_filename=um.rose_stash.split('roses/')[-1].replace('/','__')
 ocean_output_filename=nemo.ocean_xml_filename.split('roses/')[-1].replace('/','__')
 cice_output_filename=cice.rose_cice.split('roses/')[-1].replace('/','__')
 
-um.write(um_output_filename)
-nemo.write(ocean_output_filename)
-cice.write(cice_output_filename)
+um_flag=um.added!=[]
+nemo_flag=nemo.added!=[]
+cice_flag=cice.added!=[]
+
+
+if um_flag:
+    plog(bold("UM diagnostics added: "+' '.join(um.added)))
+    um.write(um_output_filename)
+else:
+    plog(bold("No UM diagnostics added."))
+         
+if nemo_flag:
+    plog(bold("NEMO diagnostics added: "+' '.join(nemo.added)))
+    nemo.write(ocean_output_filename)
+else:
+    plog(bold("No Nemo diagnostics added."))
+
+if cice_flag:
+    plog(bold("CICE diagnostics added: "+' '.join(cice.added)))
+    cice.write(cice_output_filename)
+else:
+    plog(bold("No CICE diagnostics added."))
+
+#ice_output_filename=jobname+'_'+ice_conf.replace('/','__')
+### NOT OUTPUTTING CORRECT UM CONF!!!
+
 exit()    
            
 # LBPROC Processing code. This indicates what processing has been done to the basic field. It should be
