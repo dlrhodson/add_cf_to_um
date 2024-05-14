@@ -3764,7 +3764,7 @@ if check_output:
     print("")
             
     if um.nc_missing:
-        print("The following STASH diagnostics are "+color.BOLD+" missing"+color.END+"from the output")
+        print("The following STASH diagnostics are "+color.BOLD+" missing"+color.END+" from the output")
         for i in um.nc_missing:
             print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
         print("--------------------------")
