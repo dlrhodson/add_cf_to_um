@@ -391,7 +391,8 @@ class UM:
                              'longitude latitude plev14 time':"'PLEV14'",
                              'longitude latitude soil time':"'DSOIL'",
                              'longitude latitude sdepth time':"'DSOIL'",
-                             'longitude latitude sdepth1 time':"'DSOIL1'"
+                             'longitude latitude sdepth1 time':"'DSOIL1'",
+                             'longitude latitude typeli time':"'DTILE'"
                              }
 
         self.xios_stream_ids=[]
@@ -2603,12 +2604,26 @@ class Nemo:
         self.read_ocean_xml()
         self.file_element_id_list=self.get_file_ids()
         #self.rose={}
+        #this can now be a comma-separated list of xml files
+        nemo_field_def_files=main_config['main']['nemo_def'].split(',')
+        #run over each file
+        xml_flag=True
+        for nemo_field_def_file in nemo_field_def_files:
+            if not os.path.isfile(nemo_field_def_file):
+                print(nemo_field_def_file+" does not exist")
+                exit()
+            #loop over all files, appending to the first XML structure as we go
+            if xml_flag:
+                self.nemo_full_diagnostics = ET.parse(nemo_field_def_file)
+                first_root=self.nemo_full_diagnostics.getroot()
+                xml_flag=False
+            else:
+                next_ET=ET.parse(nemo_field_def_file)
+                next_root=next_ET.getroot()
+                for element in next_root:
+                    first_root.append(element)
+                    
         
-        nemo_field_def_file=main_config['main']['nemo_def']
-        if not os.path.isfile(nemo_field_def_file):
-            print(nemo_field_def_file+" does not exist")
-            exit()
-        self.nemo_full_diagnostics = ET.parse(nemo_field_def_file)
         
 
 
@@ -2767,6 +2782,7 @@ class Nemo:
             plog(diag+" not found in XML diags?")
             #need to pull out of field_def.xml
             new_field=self.get_diag_from_field_def(diag)
+
             #find the file_group at the correct frequency
             file_group=self.get_file_group(this_freq)
             self.add_field_to_file_group(new_field,file_group,this_name_suffix)
@@ -3400,7 +3416,7 @@ class Nemo:
         #extract the name from the first field attrinb
         field_name=fields[0].attrib['name']
         field_ref=fields[0].attrib['field_ref']
-
+        field_text=fields[0].text
         #find the diagnostics with this field id
         diags=self.nemo_full_diagnostics.findall(".//field[@id='"+field_ref+"']")
         if len(diags)==0:
@@ -3415,6 +3431,8 @@ class Nemo:
         new_diag.attrib['field_ref']=new_diag.attrib['id']
         #delete existing id entry
         del new_diag.attrib['id']
+        #copy across text
+        new_diag.text=field_text
         new_cell_measure=deepcopy(self.nemo_diagnostic_request.findall(".//variable[@name='cell_measures']")[0])
         new_diag.append(new_cell_measure)
         return(new_diag)
@@ -3472,7 +3490,7 @@ class Nemo:
                 self.added.append(diag)
                 print("Done")
                 return()
-        #here - there are multiple files in this fille_group for the chosen output freq
+        #here - there are multiple files in this file_group for the chosen output freq
         #we need to check to see if one matches the grid (or name_suffix) of the requested diagnostic
         name_suffix_found=False
         for file in files:
@@ -3488,8 +3506,24 @@ class Nemo:
 
         
         print("Couldn't find "+name_suffix+" in "+file_group.attrib['id'])
-        
-        import pdb; pdb.set_trace()
+        print("Adding a new file section for "+name_suffix+" in "+file_group.attrib['id'])
+        #need to create a NEW file section with this new suffix
+        #take a copy of the first file as a template
+        new_file=deepcopy(files[0])
+        #get a new file id
+        new_file_id=self.get_unique_file_id()
+        new_file.attrib['id']=new_file_id
+        #set the name suffix
+        new_file.attrib['name_suffix']=name_suffix
+        new_file.attrib['description']='ocean '+name_suffix.replace('_','')+' variables'
+        #append field
+        plog("Created new file "+new_file_id+" for "+name_suffix)
+        new_file.append(deepcopy(field))
+        diag=field.attrib['name']
+        self.added.append(diag)
+        #now add this new file (and field) to the file_group
+        file_group.append(new_file)
+        plog("Adding "+diag+" to "+new_file.attrib['id'])
 
 
     def get_file_group(self,this_freq):
