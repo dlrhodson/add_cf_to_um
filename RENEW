@@ -1,0 +1,17 @@
+2. Updating an expired token
+
+If you have a token that you have been using and it expires you can run the command git remote -v. This command shows you your current origin which will look like;
+https://[PERSONALACCESSTOKEN]@github.com/[USERNAME]/[REPO].git.
+There are two steps to update a expired token;
+
+    First, you have to remove the expired token by running the command git remote remove origin.
+
+    After removing the expired token you can run the command git remote -v to confirm that your token has been removed.
+
+    You now need to generate a new token following the steps highlighted in the creating a new token.
+
+    After creating a new token you need a to add a remote with your updated Github personal access token.
+
+    You can add it using the command git remote add origin + your new generated token as follows; git remote add origin https://[PERSONALACCESSTOKEN]@github.com/[USERNAME]/[REPO].git and you are done.
+
+

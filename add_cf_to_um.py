@@ -1693,7 +1693,20 @@ uuid_name = 'tracking_id'
             options={}
         stash_code='m'+model+'s'+isec+'i'+item
 
-
+        #COSP check - the UM will crash if we try to write out certain
+        #STASH codes in the absence of others!
+        if isec=='02':
+            bad_codes=[[331,334],[337],[360],[450,467]]
+            found=False
+            #loop over these ranges
+            for i in bad_codes:
+                #does the item value lie within this range?
+                if int(item) >= i[0] and int(item)<= i[-1]:
+                    #if so, we need to add the 2.330 stash code!
+                    plog("This stash code required m01s02i330 to be output - or the UM will complain. Adding..")
+                    self.add_stash('m01s02i330',time_domain_cf,spatial_domain_cf)
+                    break
+            
         
         
         #rearrnge options as a dict
