@@ -3373,6 +3373,7 @@ class Nemo:
             if len(diags)==0:
                 print("No diags found with field_ref "+field_ref)
                 import pdb; pdb.set_trace()
+
             if len(diags)>1:
                 print("Multiple matching ids!")
                 plog("***WARNING - Multple Matching NEMO ids! ***")
@@ -3441,7 +3442,11 @@ class Nemo:
             import pdb; pdb.set_trace()
         if len(diags)>1:
             print("Multiple matching ids!")
-            import pdb; pdb.set_trace()
+            plog("***WARNING - Multple Matching NEMO ids! ***")
+            for d in diags:
+                plog(d.attrib)
+            plog("Using the FIRST id")
+            
         new_diag=deepcopy(diags[0])
         new_diag.attrib['name']=field_name
         #convert the id to field_ref
