@@ -3375,6 +3375,10 @@ class Nemo:
                 import pdb; pdb.set_trace()
             if len(diags)>1:
                 print("Multiple matching ids!")
+                plog("***WARNING - Multple Matching NEMO ids! ***")
+                for d in diags:
+                    plog(d.attrib)
+                plog("Using the FIRST id")
                 import pdb; pdb.set_trace()
             this_parent=diags[0].getparent()
             field_group_id=this_parent.attrib['id']
