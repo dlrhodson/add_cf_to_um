@@ -3379,6 +3379,7 @@ class Nemo:
                 for d in diags:
                     plog(d.attrib)
                 plog("Using the FIRST id")
+                
             this_parent=diags[0].getparent()
             field_group_id=this_parent.attrib['id']
             #does this_parent have a grid_ref attrib?
