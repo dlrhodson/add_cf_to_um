@@ -172,6 +172,7 @@ def add_nemo_cice_diagnostic(diag,freq,dims):
         cice.addIceDiag('f_'+diag,freq,dims)
         return()
 
+
     
     #Here diag is either a nemo diag that exists in the xml definitions or it is undefined
     #Check all the XML definitions
@@ -186,6 +187,7 @@ def add_nemo_cice_diagnostic(diag,freq,dims):
 
     fields=nemo.nemo_diagnostic_request.findall(".//field[@name='"+diag+"']")
     if len(fields)>0:
+
         #we found a matching diagnostics in the NEMO user defined diagnostics
         plog("Adding NEMO diag "+diag)
         new_line=dict(line)
@@ -2777,8 +2779,7 @@ class Nemo:
                 
         this_freq=self.freq_map[freq]
 
-
-
+        
 
         this_name_suffix=self.get_name_suffix(diag)
         if this_name_suffix==None:
@@ -2791,6 +2792,8 @@ class Nemo:
 
         root=self.nemo_diagnostic_request.getroot()
         fields=root.findall(".//field[@name='"+diag+"']")
+
+
         if len(fields)==0:
             plog(diag+" not found in XML diags?")
             #need to pull out of field_def.xml
@@ -3426,6 +3429,8 @@ class Nemo:
     def get_diag_from_field_def(self,diag):
         fields=self.nemo_full_diagnostics.findall(".//field[@name='"+diag+"']")
 
+
+        
         if len(fields)==0:
             #nothing here either!
             plog(diag+" is unknown cf variable!")
@@ -3455,6 +3460,15 @@ class Nemo:
         del new_diag.attrib['id']
         #copy across text
         new_diag.text=field_text
+        #overwite units if specified
+        if 'unit' in fields[0].attrib:
+            new_diag.attrib['unit']=fields[0].attrib['unit']
+        #overwite standard_name if specified
+        if 'standard_name' in fields[0].attrib:
+            new_diag.attrib['standard_name']=fields[0].attrib['standard_name']
+
+            
+        
         new_cell_measure=deepcopy(self.nemo_diagnostic_request.findall(".//variable[@name='cell_measures']")[0])
         new_diag.append(new_cell_measure)
         return(new_diag)
