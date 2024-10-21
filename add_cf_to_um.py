@@ -10,7 +10,7 @@
 #stash_type is um or xios - defined which stash to use to add diagnostics for the atmosphere
 
 
-from copy import deepcopy
+from copy import deepcopy,copy
 import lxml.etree as ET
 #import xml.etree.ElementTree as ET
 import configparser
@@ -3545,7 +3545,10 @@ class Nemo:
         print("Adding a new file section for "+name_suffix+" in "+file_group.attrib['id'])
         #need to create a NEW file section with this new suffix
         #take a copy of the first file as a template
-        new_file=deepcopy(files[0])
+        ##new_file=deepcopy(files[0])
+        ## this doesn't work - as it copies all existing children too
+        #try
+        new_file=ET.Element(files[0].tag, files[0].attrib)
         #get a new file id
         new_file_id=self.get_unique_file_id()
         new_file.attrib['id']=new_file_id
