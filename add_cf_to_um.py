@@ -3480,6 +3480,19 @@ class Nemo:
         
         '''
 
+        #optional remapping of output files
+        #sometimes the default file output defined in field_def.xml is inconvenient
+        #here we can remap using the [file_map] section in the main config file
+        
+        #do we have a file_map section in the main config?
+        if 'file_map' in main_config:
+            #is this name_suffix remapped?
+            if name_suffix in main_config['file_map']:
+                #yes - so replace with remapping
+                name_suffix=main_config['file_map'][name_suffix]
+
+        
+            
         #get the <file> elements in this file_group
         root=self.nemo_diagnostic_request.getroot()
         files=file_group.findall(".//file")
