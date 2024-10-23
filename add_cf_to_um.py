@@ -2725,6 +2725,18 @@ class Nemo:
     def nc_check_ocean(self,diag,freq,dims):
         print("Check Ocean output")
 
+        # Define the dictionary with the coordinate replacements
+        replacements = {
+            'nav_lon': 'longitude',
+            'nav_lat': 'latitude',
+            'time_counter': 'time',
+            'deptht': 'olevel',
+            'depthu': 'olevel',
+            'depthv': 'olevel',
+            'depthw': 'olevel'
+        }
+
+        
         if diag=='ficeberg' and 'olevel' in dims:
             print("ficeberg is actually a 2d field - adjusting")
             dims=dims.replace('olevel','')
@@ -2737,6 +2749,9 @@ class Nemo:
             print(diag+" found in NC output")
             #import pdb; pdb.set_trace()
             #does this have the required domain?
+            if diag=='vto':
+                import pdb; pdb.set_trace()
+
 
             #this is slightly odd - but basin is not a dimension, and these basin indices retain longitude for some reason!
             spatial_domain_cf_adjusted=dims.replace('basin','longitude')
@@ -2747,7 +2762,17 @@ class Nemo:
             ## SPATIAL domain doesn't map perfectly as ICE is IJ not long lat!
             for this_match in matches:
                 nc_domain1=[item.nc_get_variable() for item in this_match.coords().values()]
-                nc_domain=sorted([item.replace('nav_lon','longitude').replace('nav_lat','latitude').replace('time_counter','time').replace('deptht','olevel').replace('depthu','olevel').replace('depthv','olevel').replace('depthw','olevel')  for item in nc_domain1])
+                #nc_domain=sorted([item.replace('nav_lon','longitude').replace('nav_lat','latitude').replace('time_counter','time').replace('deptht','olevel').replace('depthu','olevel').replace('depthv','olevel').replace('depthw','olevel')  for item in nc_domain1])
+
+                nc_domain=''
+                for nc_dim in nc_domain1:
+                    for key in replacements:
+                        if key in nc_dim:
+                            nc_dim=replacements[key]
+                        nc_domain.append(nc_dim)
+                nc_domain.sort()
+                    
+                    
                 #nc_domain=sorted([item.standard_name for item in this_match.coords().values()])
                 if spatial_domain_cf_list==nc_domain:
                     #spatial domains match!
