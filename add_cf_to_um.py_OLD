@@ -10,7 +10,7 @@
 #stash_type is um or xios - defined which stash to use to add diagnostics for the atmosphere
 
 
-from copy import deepcopy,copy
+from copy import deepcopy
 import lxml.etree as ET
 #import xml.etree.ElementTree as ET
 import configparser
@@ -2725,18 +2725,6 @@ class Nemo:
     def nc_check_ocean(self,diag,freq,dims):
         print("Check Ocean output")
 
-        # Define the dictionary with the coordinate replacements
-        replacements = {
-            'nav_lon': 'longitude',
-            'nav_lat': 'latitude',
-            'time_counter': 'time',
-            'deptht': 'olevel',
-            'depthu': 'olevel',
-            'depthv': 'olevel',
-            'depthw': 'olevel'
-        }
-
-        
         if diag=='ficeberg' and 'olevel' in dims:
             print("ficeberg is actually a 2d field - adjusting")
             dims=dims.replace('olevel','')
@@ -2749,9 +2737,6 @@ class Nemo:
             print(diag+" found in NC output")
             #import pdb; pdb.set_trace()
             #does this have the required domain?
-            if diag=='vto':
-                import pdb; pdb.set_trace()
-
 
             #this is slightly odd - but basin is not a dimension, and these basin indices retain longitude for some reason!
             spatial_domain_cf_adjusted=dims.replace('basin','longitude')
@@ -2762,17 +2747,7 @@ class Nemo:
             ## SPATIAL domain doesn't map perfectly as ICE is IJ not long lat!
             for this_match in matches:
                 nc_domain1=[item.nc_get_variable() for item in this_match.coords().values()]
-                #nc_domain=sorted([item.replace('nav_lon','longitude').replace('nav_lat','latitude').replace('time_counter','time').replace('deptht','olevel').replace('depthu','olevel').replace('depthv','olevel').replace('depthw','olevel')  for item in nc_domain1])
-
-                nc_domain=[]
-                for nc_dim in nc_domain1:
-                    for key in replacements:
-                        if key in nc_dim:
-                            nc_dim=replacements[key]
-                        nc_domain.append(nc_dim)
-                nc_domain.sort()
-                    
-                    
+                nc_domain=sorted([item.replace('nav_lon','longitude').replace('nav_lat','latitude').replace('time_counter','time').replace('deptht','olevel').replace('depthu','olevel').replace('depthv','olevel').replace('depthw','olevel')  for item in nc_domain1])
                 #nc_domain=sorted([item.standard_name for item in this_match.coords().values()])
                 if spatial_domain_cf_list==nc_domain:
                     #spatial domains match!
@@ -3505,19 +3480,6 @@ class Nemo:
         
         '''
 
-        #optional remapping of output files
-        #sometimes the default file output defined in field_def.xml is inconvenient
-        #here we can remap using the [file_map] section in the main config file
-        
-        #do we have a file_map section in the main config?
-        if 'file_map' in main_config:
-            #is this name_suffix remapped?
-            if name_suffix in main_config['file_map']:
-                #yes - so replace with remapping
-                name_suffix=main_config['file_map'][name_suffix]
-
-        
-            
         #get the <file> elements in this file_group
         root=self.nemo_diagnostic_request.getroot()
         files=file_group.findall(".//file")
@@ -3583,10 +3545,7 @@ class Nemo:
         print("Adding a new file section for "+name_suffix+" in "+file_group.attrib['id'])
         #need to create a NEW file section with this new suffix
         #take a copy of the first file as a template
-        ##new_file=deepcopy(files[0])
-        ## this doesn't work - as it copies all existing children too
-        #try
-        new_file=ET.Element(files[0].tag, files[0].attrib)
+        new_file=deepcopy(files[0])
         #get a new file id
         new_file_id=self.get_unique_file_id()
         new_file.attrib['id']=new_file_id
