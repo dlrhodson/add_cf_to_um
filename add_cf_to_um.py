@@ -3707,7 +3707,7 @@ def check_stash_eq(um,nemo):
 
 
 def plog(message):
-    plog(message)
+    print(message)
     logging.info(message)
     
 
