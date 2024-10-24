@@ -2769,7 +2769,7 @@ class Nemo:
                     for key in replacements:
                         if key in nc_dim:
                             nc_dim=replacements[key]
-                        nc_domain.append(nc_dim)
+                            nc_domain.append(nc_dim)
                 nc_domain.sort()
                     
                     
