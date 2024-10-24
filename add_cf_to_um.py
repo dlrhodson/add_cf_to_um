@@ -2749,8 +2749,6 @@ class Nemo:
             print(diag+" found in NC output")
             #import pdb; pdb.set_trace()
             #does this have the required domain?
-            if diag=='vto':
-                import pdb; pdb.set_trace()
 
 
             #this is slightly odd - but basin is not a dimension, and these basin indices retain longitude for some reason!
