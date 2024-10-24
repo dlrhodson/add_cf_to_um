@@ -83,13 +83,13 @@ def read_cf_mappings():
        configFilePaths=configFilePath.split(',')
        for path in configFilePaths:
           if not os.path.isfile(path):
-             print("ROSE conf file "+path+" does not exist")
+             plog("ROSE conf file "+path+" does not exist")
              exit()
 
        cf_mappings.read(configFilePaths)
     else:
        if not os.path.isfile(configFilePath):
-          print("ROSE conf file "+configFilePath+" does not exist")
+          plog("ROSE conf file "+configFilePath+" does not exist")
           exit()
        cf_mappings.read(configFilePath)
     return(cf_mappings)
@@ -202,14 +202,14 @@ def add_nemo_cice_diagnostic(diag,freq,dims):
         fields=off_diag.findall(".//field[@name='"+diag+"']")
         if len(fields)==1:
             plog(diag+" found in the commented out diagnostics")
-            print("uncommenting "+diag)
+            plog("uncommenting "+diag)
             
             this_freq=nemo.freq_map[freq]
             file_group=nemo.get_file_group(this_freq)
             #does this diag have a parent in the off_diag?
             parent=fields[0].getparent()
             if len(parent)==0:
-               print("No parent found for "+diag+" in comments!")
+               plog("No parent found for "+diag+" in comments!")
                import pdb; pdb.set_trace()
             this_name_suffix=parent.attrib['name_suffix']
 
@@ -231,14 +231,14 @@ def add_nemo_cice_diagnostic(diag,freq,dims):
                 new_file_element.attrib.update(dict(parent.attrib))
 
             #add this field to the file group
-            print(this_name_suffix)
+            plog(this_name_suffix)
             #SOMETHING GOING WRONG HERE!
             nemo.add_field_to_file_group(fields[0],file_group,this_name_suffix)
             return()
             #What is the best way to uncomment this?
             #Need to go Into addOceanDiag somewhrer
         if len(fields)>1:
-           print("Too many  matches of "+diag+" in the comment fields!")
+           plog("Too many  matches of "+diag+" in the comment fields!")
            import pdb; pdb.set_trace()
 
 
@@ -259,7 +259,7 @@ def add_cf_diagnostic(diag,freq,dims):
     Sometimes cf mappings will map to themselves - this implies they are variables intrinsic to the model (eg NEMO or CICE)
     '''
     
-    print(">>>>>>  "+diag)
+    plog(">>>>>>  "+diag)
 
     ##HERE we need to proceed if the diag is in cf_mappings
     ##IF it is, but the expression points back to itself - need to map to natice nemo or cice
@@ -333,7 +333,7 @@ def add_cf_diagnostic(diag,freq,dims):
     if nemo_cice_diags:
         #we have a single nemo or cice diagnostic that exists in the cf mappings
         if len(nemo_cice_diags)>1:
-            print("Something went wrong!")
+            plog("Something went wrong!")
             import pdb; pdb.set_trace()
 
    
@@ -424,7 +424,7 @@ class UM:
             else:
                 self.rose_stash=main_config['user']['job_path']+'app/um/rose-app.conf'
         else:
-            print(umOrXIOS+" is not a valid UM class type")
+            plog(umOrXIOS+" is not a valid UM class type")
             import pdb; pdb.set_trace()
 
         self.rose,self.rose_header=self.read_rose_app_conf(self.rose_stash)
@@ -436,7 +436,7 @@ class UM:
            #read in all the existing xios stream definitions
            self.get_xios_streams()
         else:
-           print("UM- need to add the USAGE stream handler!")
+           plog("UM- need to add the USAGE stream handler!")
            import pdb; pdb.set_trace()
 
 
@@ -523,7 +523,7 @@ class UM:
         else:
             this_use=self.cmip6[cmip6_time_match[0]]['use_name']
             this_domain=self.cmip6[cmip6_time_match[0]]['dom_name']
-            print("Found existing use of "+this_time+" which uses "+this_use+" and "+this_domain)
+            plog("Found existing use of "+this_time+" which uses "+this_use+" and "+this_domain)
             #import pdb; pdb.set_trace()
 
             
@@ -554,9 +554,9 @@ class UM:
                     self.use_matrix[this_time][this_domain].append(this_use)
                     check_use_already_exists(this_use)
                     if not this_use in self.use_list:
-                        print("FISH")
+                        plog("FISH")
                         #this usage does not exist in ROSE
-                        print("copying usage "+this_use+" to ROSE")
+                        plog("copying usage "+this_use+" to ROSE")
                         import pdb; pdb.set_trace()
                         #####HEEEREE
             else:
@@ -565,7 +565,7 @@ class UM:
                 #check to ensure that this_use exists and points to an output stream - if not TAKE ACTION!
                 self.check_use_already_exists(this_use)
                 if not this_use in self.use_list:
-                    print("HELLO")
+                    plog("HELLO")
                     #this usage does not exist in ROSE
                     plog("copying usage "+this_use+" to ROSE")
                     #copy usage with name this_use from CMIP6
@@ -622,31 +622,31 @@ class UM:
        if not use in self.use_list:
           plog(use+" does not already exist in ROSE")
           if not 'usage' in main_config:
-             print("No [usage] section in "+conf_file)
-             print("Please add the following to "+conf_file+" and then re-run ")
-             print()
-             print("[usage]")
-             print(use.replace("'","")+"=<xios_stream_reference>")
-             print()
-             print("Where <xios_stream_reference> is either one of the following existing xios streams:")
+             plog("No [usage] section in "+conf_file)
+             plog("Please add the following to "+conf_file+" and then re-run ")
+             plog()
+             plog("[usage]")
+             plog(use.replace("'","")+"=<xios_stream_reference>")
+             plog()
+             plog("Where <xios_stream_reference> is either one of the following existing xios streams:")
              for i in self.xios_stream_ids:
-                      print(i)
-             print()
-             print("Or a new xios_stream that you want to define")
+                      plog(i)
+             plog()
+             plog("Or a new xios_stream that you want to define")
              exit()
           else:
              usage_section=main_config['usage']
              #remove ' just in case
              if not use.replace("'","") in usage_section:
-                print("[usage] section exists in "+conf_file+ " but no usage stream mapping defined for "+use+" in this [usage] section")
-                print("Please add a use mapping to the [usage] section - something like:")
-                print(use.replace("'","")+"=<xios_stream_reference>")
-                print()
-                print("Where <xios_stream_reference> is either one of the following existing xios streams:")
+                plog("[usage] section exists in "+conf_file+ " but no usage stream mapping defined for "+use+" in this [usage] section")
+                plog("Please add a use mapping to the [usage] section - something like:")
+                plog(use.replace("'","")+"=<xios_stream_reference>")
+                plog()
+                plog("Where <xios_stream_reference> is either one of the following existing xios streams:")
                 for i in self.xios_stream_ids:
-                   print(i)
-                print()
-                print("Or a new xios_stream that you want to define")
+                   plog(i)
+                plog()
+                plog("Or a new xios_stream that you want to define")
                 exit()
              else:
                 
@@ -669,11 +669,11 @@ class UM:
                       this_filename_base=main_config[this_xios_stream]['filename_base'].replace("'","")
 
                       if this_filename_base in self.xios_stream_filename_bases:
-                         print("Oh - the filename base name for the new xios_stream ("+this_filename_base+") is already used by another xios stream!")
-                         print("Existing stream base names are:")
+                         plog("Oh - the filename base name for the new xios_stream ("+this_filename_base+") is already used by another xios stream!")
+                         plog("Existing stream base names are:")
                          for i in self.xios_stream_filename_bases:
-                            print(i)
-                         print("Please change this and rerun")
+                            plog(i)
+                         plog("Please change this and rerun")
                          exit()
                       else:
                          #Everthing OK - we now need to add the XIOS stream to ROSE
@@ -682,19 +682,19 @@ class UM:
                          #and the USAGE
                          plog("Adding "+use+" to ROSE")
                          self.add_new_usage(use,use_stream)
-                         print("DONE")
+                         plog("DONE")
                          return()
                          
                    else:
                       for i in self.xios_stream_ids:
-                         print(i)
+                         plog(i)
                       
-                      print("Please either adjust this to an existing output stream - or add an xios stream definition section to "+conf_file+". Something like")
-                      print()
-                      print("[namelist:xios_streams("+use_stream+")]")
-                      print("compression_level = 0")
-                      print("file_id = '"+use_stream+"'")
-                      print("""!!filename = ''
+                      plog("Please either adjust this to an existing output stream - or add an xios stream definition section to "+conf_file+". Something like")
+                      plog()
+                      plog("[namelist:xios_streams("+use_stream+")]")
+                      plog("compression_level = 0")
+                      plog("file_id = '"+use_stream+"'")
+                      plog("""!!filename = ''
 filename_base = './${RUNID}a_mon_'
 l_reinit = .true.
 output_freq_unit = 4
@@ -746,7 +746,7 @@ uuid_name = 'tracking_id'
        
        plog("Adding to use_list")
        self.use_list.append(use)
-       print("Done")
+       plog("Done")
 
           
     def get_xios_streams(self):
@@ -778,7 +778,7 @@ uuid_name = 'tracking_id'
     def read_STASHmaster_A_levels(self):
         file=main_config['main']['stashmaster_A']
         if not os.path.isfile(file):
-            print(file+" does not exist")
+            plog(file+" does not exist")
             exit()
 
         stashfile=open(file,'r')
@@ -832,8 +832,8 @@ uuid_name = 'tracking_id'
                        this_line[headings[bit]]=int(bits[bit+1].strip(' '))
                     self.stash_levels[scode]=this_line
                     if not this_line['LevelT'] in level_names:
-                        print("Unknown level! "+str(this_line['LevelT']))
-                        print(name)
+                        plog("Unknown level! "+str(this_line['LevelT']))
+                        plog(name)
                         import pdb; pdb.set_trace()
                     else:
                         self.stash_levels[scode]=this_line
@@ -845,7 +845,7 @@ uuid_name = 'tracking_id'
     def read_STASHmaster_A_levels_old(self):
         file=main_config['main']['stashmaster_A']
         if not os.path.isfile(file):
-            print(file+" does not exist")
+            plog(file+" does not exist")
             exit()
 
         stashfile=open(file,'r')
@@ -892,8 +892,8 @@ uuid_name = 'tracking_id'
                 if bits[0]=='2':
                     level=int(bits[5].strip(' '))
                     if not level in level_names:
-                        print("Unknown level! "+str(level))
-                        print(name)
+                        plog("Unknown level! "+str(level))
+                        plog(name)
                         #import pdb; pdb.set_trace()
                     else:
                         self.stash_levels[scode]=level
@@ -914,13 +914,13 @@ uuid_name = 'tracking_id'
            configFilePaths=configFilePath.split(',')
            for path in configFilePaths:
               if not os.path.isfile(path):
-                 print("ROSE conf file "+path+" does not exist")
+                 plog("ROSE conf file "+path+" does not exist")
                  exit()
 
            self.cf_to_stash.read(configFilePaths)
         else:
            if not os.path.isfile(configFilePath):
-              print("ROSE conf file "+configFilePath+" does not exist")
+              plog("ROSE conf file "+configFilePath+" does not exist")
               exit()
            self.cf_to_stash.read(configFilePath)
         return()
@@ -936,7 +936,7 @@ uuid_name = 'tracking_id'
         #test if this is true, if so, extract this header
         header_flag=True
         if not os.path.isfile(file):
-            print("ROSE conf file "+file+" does not exist")
+            plog("ROSE conf file "+file+" does not exist")
             exit()
  
         with open(configFilePath) as stream:
@@ -998,8 +998,8 @@ uuid_name = 'tracking_id'
                     #time domain found in cmip6 - leave loop
                     break
             if not tim_name_found:
-                print('Time domain '+this_time_dom+" Not found in CMIP6 reference!")
-                print("Not sure what to do now!")
+                plog('Time domain '+this_time_dom+" Not found in CMIP6 reference!")
+                plog("Not sure what to do now!")
                 import pdb; pdb.set_trace()
 
             #does one of the time domains in rose match cmip6_tim_dom?
@@ -1020,8 +1020,8 @@ uuid_name = 'tracking_id'
                     rose_tim_found=key
                     break
             if rose_tim_found==None:
-                print("Time domain for "+freq+" not found in Rose")
-                print("Need to copy across from the CMIP6 reference")
+                plog("Time domain for "+freq+" not found in Rose")
+                plog("Need to copy across from the CMIP6 reference")
                 plog("Adding "+this_cmip6['tim_name']+" across from the CMIP6 reference to the "+bold(self.umOrXIOS)+" STASH")
                 #copy across CMIP6 TIME DOMAIN
                 if self.umOrXIOS=='xios':
@@ -1038,7 +1038,7 @@ uuid_name = 'tracking_id'
                 #time domain mapping is set to the NAME (eg TDAYMN) PLUS the ITYP - eg 3:mean 5:min etc
                 self.rose_time_domain_mappings[freq+'_'+this_cmip6['ityp']]=this_cmip6['tim_name']
                 #Now need to add this Time domain to the use_matrix
-                print("Now need to add "+this_cmip6['tim_name']+" to the use matrix")
+                plog("Now need to add "+this_cmip6['tim_name']+" to the use matrix")
                 #find all variables in cmip6 that use this time domain
                 cmip6_variable_keys=[key for key in self.cmip6.keys() if 'umstash_streq' in key]
                 for cmip_variable_key in cmip6_variable_keys:
@@ -1073,9 +1073,9 @@ uuid_name = 'tracking_id'
                                self.use_matrix[this_time][this_domain].append(this_use)
                                check_use_already_exists(this_use)
                                if not this_use in self.use_list:
-                                  print("FISH")
+                                  plog("FISH")
                                   #this usage does not exist in ROSE
-                                  print("copying usage "+this_use+" to ROSE")
+                                  plog("copying usage "+this_use+" to ROSE")
                                   import pdb; pdb.set_trace()
                                   #####HEEEREE
                          else:
@@ -1084,9 +1084,9 @@ uuid_name = 'tracking_id'
                             #check to ensure that this_use exists and points to an output stream - if not TAKE ACTION!
                             self.check_use_already_exists(this_use)
                             if not this_use in self.use_list:
-                               print("HELLO")
+                               plog("HELLO")
                                #this usage does not exist in ROSE
-                               print("copying usage "+this_use+" to ROSE")
+                               plog("copying usage "+this_use+" to ROSE")
                                #copy usage with name this_use from CMIP6
                                new_use=self.cmip6[self.cmip6_use_mappings[this_use]]
                                #create a consistent new file id for this usage
@@ -1144,13 +1144,13 @@ uuid_name = 'tracking_id'
                             cmip6_space_dom[key]=this_item
                     break
             if not space_name_found:
-                print('Space domain '+this_space_dom+" Not found in CMIP6 reference!")
+                plog('Space domain '+this_space_dom+" Not found in CMIP6 reference!")
                 user_domains=[key for key in main_config if 'umstash_domain' in key]
                 if user_domains:
-                    print("Found some user defined domains "+' '.join(user_domains))
+                    plog("Found some user defined domains "+' '.join(user_domains))
                     user_domain_found=[key for key in user_domains if main_config[key]['dom_name']==this_space_dom]
                     if not user_domain_found:
-                        print("No "+this_space_dom+" found in the user domaines :(")
+                        plog("No "+this_space_dom+" found in the user domaines :(")
                         import pdb; pdb.set_trace()
                     #just pick first - they all match the this_space_dom!
                     user_space=user_domain_found[0]
@@ -1163,11 +1163,11 @@ uuid_name = 'tracking_id'
                     user_space_new=user_space_sub[0]+'('+user_space_sub[1].split('_')[0]+'_'+this_uuid+')'
                     self.rose[user_space_new]=user_space_dom_full
                     self.rose_space_domain_mappings[space]=user_space_dom_full['dom_name']
-                    print("Copied user domain "+user_space_dom_full['dom_name']+" to ROSE")
+                    plog("Copied user domain "+user_space_dom_full['dom_name']+" to ROSE")
                     
                     continue
 
-                print("Not sure what to do now!")
+                plog("Not sure what to do now!")
                 import pdb; pdb.set_trace()
 
             #does one of the space domains in rose match cmip6_tim_dom?
@@ -1184,7 +1184,7 @@ uuid_name = 'tracking_id'
                     rose_space_found=key
                     break
             if rose_space_found==None:
-                print("Space domain "+this_cmip6['dom_name']+"not found in Rose")
+                plog("Space domain "+this_cmip6['dom_name']+"not found in Rose")
                 plog("copying "+this_cmip6['dom_name']+" across from the CMIP6 reference")
                 #logging.info("Adding "+this_cmip6['dom_name']+" across from the CMIP6 reference")
                 #copy across CMIP6 DOMAON
@@ -1238,7 +1238,7 @@ uuid_name = 'tracking_id'
         
 
         if not cf_variable in self.cf_to_stash.sections():
-            print(cf_variable+" not found in the stash mapping!")
+            plog(cf_variable+" not found in the stash mapping!")
             plog(bold("skipping "+cf_variable))
             self.missing.append(cf_variable)
             return(None,None)
@@ -1266,7 +1266,7 @@ uuid_name = 'tracking_id'
         freq=line['time']
         dims=line['space']
 
-        print(cf_var+" "+freq)
+        plog(cf_var+" "+freq)
 
         #get the stash code and dimensions for this cf variable
         req_stash,dimensions=self.get_stash_codes(cf_var)
@@ -1275,22 +1275,22 @@ uuid_name = 'tracking_id'
             #that didn't work!
             return()
         if dimensions!=dims:
-            print("dimensions clash!")
+            plog("dimensions clash!")
             #plog("CF mappings requests ["+dimensions+"] but input diagnostics request wants ["+dims+"]")
             #plog("Using ["+dims+"]")
             plog("mappings requests ["+dimensions+"] but input diagnostics request wants ["+dims+"]\nUsing ["+dims+"]")
             plog("Using ["+dims+"]")
             dimensions=dims
 
-        print(req_stash)
+        plog(req_stash)
         import pdb; pdb.set_trace()
 
         if not freq in self.rose_time_domain_mappings:
-            print("\t"+freq+" does not exist in time mappings?")
+            plog("\t"+freq+" does not exist in time mappings?")
             import pdb; pdb.set_trace()
 
         if not dimensions in self.rose_space_domain_mappings:
-            print("\t"+dimensions+" does not exist in space mappings?")
+            plog("\t"+dimensions+" does not exist in space mappings?")
             import pdb; pdb.set_trace()
 
                 
@@ -1314,7 +1314,7 @@ uuid_name = 'tracking_id'
         for i in rose_space_keys:
             if self.rose[i]['dom_name']==dom_name:
                 return(int(self.rose[i]['iopl']))
-        print(dom_name+' not found?')
+        plog(dom_name+' not found?')
         import pdb; pdb.set_trace()
 
 
@@ -1407,19 +1407,19 @@ uuid_name = 'tracking_id'
                         plog("Converted space domain to 'DSOIL'")
 
                     else:
-                        print("Need DSOIL domain for this diagnostics, but not available???")
+                        plog("Need DSOIL domain for this diagnostics, but not available???")
                         import pdb; pdb.set_trace()
 
                         
                 else:
-                    print("Not sure what to do here!")
+                    plog("Not sure what to do here!")
                     import pdb; pdb.set_trace()
 
 
         if sc_pseudo_level!=0:
            #this field uses pseudo levels
            #which do we need?
-           print(stash_code+" requires pseudo levels")
+           plog(stash_code+" requires pseudo levels")
 
            
            rose_space_keys=[key for key in self.rose.keys() if 'umstash_domain' in key]
@@ -1441,18 +1441,18 @@ uuid_name = 'tracking_id'
                        pseudo_level_found=True
                        break
                     else:
-                       print("Found "+this_dom+" but the pseudolevel range "+str(pslist)+" does not match the defined range "+str(this_stash['PseudF'])+"-"+str(this_stash['PseudL'])+" for "+stash_code)
-                       print("If you want to use "+this_dom+" for "+stash_code+" ("+self.stash_names[stash_code].strip()+") "+" add the line:\n"+stash_code+" = "+this_dom+"\nto "+main_config['user']['log_file'].strip("'")+" under a [domains] section")
+                       plog("Found "+this_dom+" but the pseudolevel range "+str(pslist)+" does not match the defined range "+str(this_stash['PseudF'])+"-"+str(this_stash['PseudL'])+" for "+stash_code)
+                       plog("If you want to use "+this_dom+" for "+stash_code+" ("+self.stash_names[stash_code].strip()+") "+" add the line:\n"+stash_code+" = "+this_dom+"\nto "+main_config['user']['log_file'].strip("'")+" under a [domains] section")
                              
                     
            if pseudo_level_found:
               
-              print(this_dom+" in ROSE uses the correct pseudo level and model levels "+key)
+              plog(this_dom+" in ROSE uses the correct pseudo level and model levels "+key)
               plog("Using "+this_dom+" for "+stash_code)
               spatial_domain=this_dom
            else:
-              print("Pseudo level range not found in ROSE domains")
-              print("Checking CMIP reference")
+              plog("Pseudo level range not found in ROSE domains")
+              plog("Checking CMIP reference")
             
               cmip6_space_keys=[key for key in self.cmip6.keys() if 'umstash_domain' in key]
               
@@ -1475,16 +1475,16 @@ uuid_name = 'tracking_id'
                           pseudo_level_found=True
                           break
                        else:
-                          print("Found "+this_dom+" but the pseudolevel range "+str(pslist)+" does not match the defined range "+str(this_stash['PseudF'])+"-"+str(this_stash['PseudL'])+" for "+stash_code)
+                          plog("Found "+this_dom+" but the pseudolevel range "+str(pslist)+" does not match the defined range "+str(this_stash['PseudF'])+"-"+str(this_stash['PseudL'])+" for "+stash_code)
                     
                     break
 
               if pseudo_level_found:
-                 print("Pseudo level "+str(sc_pseudo_level)+" found in CMIP6 in "+key)
+                 plog("Pseudo level "+str(sc_pseudo_level)+" found in CMIP6 in "+key)
                  import pdb; pdb.set_trace()
               else:
-                 print("Pseudo level range  not found in CMIP6 Domains")
-                 print("Need to define a domain usage in "+main_config['user']['log_file'].strip("'")+" under a [domains] section")
+                 plog("Pseudo level range  not found in CMIP6 Domains")
+                 plog("Need to define a domain usage in "+main_config['user']['log_file'].strip("'")+" under a [domains] section")
                  exit()
         return(spatial_domain,spatial_domain_cf)
 
@@ -1501,7 +1501,7 @@ uuid_name = 'tracking_id'
             lbproc=options['lbproc']
 
         if not lbproc in self.lbproc_mappings:
-            print("Hmmm.. "+lbproc+" not found!")
+            plog("Hmmm.. "+lbproc+" not found!")
             import pdb; pdb.set_trace()
             #does rose or cmip6 contain a time domain that has this time operation
         this_time_domain_key=time_domain_cf+'_'+self.lbproc_mappings[lbproc]
@@ -1521,50 +1521,50 @@ uuid_name = 'tracking_id'
         time_usage_found=False
         #rose_lbproc=[ x for x in rose_time_keys if um.rose[x]['ityp']==self.lbproc_mappings[options['lbproc']]]
         if rose_lbproc:
-           print("LBPROC found in ROSE")
+           plog("LBPROC found in ROSE")
            if len(rose_lbproc)>1:
-              print("Hmm - we have more than one choice here!")
+              plog("Hmm - we have more than one choice here!")
               import pdb; pdb.set_trace()
            else:
               time_domain=um.rose[rose_lbproc[0]]['tim_name']
-              print("Switching to "+time_domain)
+              plog("Switching to "+time_domain)
               return(time_domain)
 
         cmip6_lbproc=[ x for x in cmip6_time_keys if is_subset(time_filter,um.cmip6[x])]
         #cmip6_lbproc=[ x for x in cmip6_time_keys if um.cmip6[x]['ityp']==self.lbproc_mappings[options['lbproc']]]
         if cmip6_lbproc:
-            print("LBPROC found in CMIP6")
+            plog("LBPROC found in CMIP6")
 
             #COPY ACCROSS
             if len(cmip6_lbproc)>1:
-                print("Hmm - we have more than one choice here!")
+                plog("Hmm - we have more than one choice here!")
                 if len(cmip6_lbproc)>2:
-                    print("Too many!")
+                    plog("Too many!")
                     import pdb; pdb.set_trace()
                 else:
                     if not is_equal_except(um.cmip6.items(cmip6_lbproc[0]),um.cmip6.items(cmip6_lbproc[1]),'tim_name'):
-                        print("Two choices, but not equivalent!")
+                        plog("Two choices, but not equivalent!")
                         import pdb; pdb.set_trace()
-                    print("2 choices, but these are equivalent time profiles")
-                    print("We will use "+cmip6_lbproc[0])
+                    plog("2 choices, but these are equivalent time profiles")
+                    plog("We will use "+cmip6_lbproc[0])
              
                     
             time_domain=um.cmip6[cmip6_lbproc[0]]
             time_domain_name=time_domain['tim_name']
             #import pdb; pdb.set_trace()
-            print("Copying "+time_domain_name+" to ROSE")
+            plog("Copying "+time_domain_name+" to ROSE")
             self.copy_cmip6_tim_dom_to_rose(time_domain,spatial_domain)
-            print("Switching to "+time_domain_name)
+            plog("Switching to "+time_domain_name)
 
             return(time_domain_name)
 
-        print("LBPROC not found anywhere!")
+        plog("LBPROC not found anywhere!")
         import pdb; pdb.set_trace()
 
         return(time_domain) 
 
     def nc_check_stash(self,stash_code,time_domain_cf,spatial_domain_cf):
-        print("Check output")
+        plog("Check output")
         #the split is because multiple occurrences of a stash code in a netcdf file will be appended with _2 _3 etc
         #we just want to check the stash code part
         #if 'pseudo' in spatial_domain_cf:
@@ -1572,10 +1572,10 @@ uuid_name = 'tracking_id'
         
         matches=[key for key in nc_output if key.nc_get_variable().split('_')[0]==stash_code]
         if not matches:
-            print(stash_code+" not found in NC output")
+            plog(stash_code+" not found in NC output")
             spatial_domain_cf_list=sorted(spatial_domain_cf.split(' '))
         else:
-            print(stash_code+" found in NC output")
+            plog(stash_code+" found in NC output")
             #if 'height' in spatial_domain_cf:
             #    import pdb; pdb.set_trace()
 
@@ -1628,12 +1628,12 @@ uuid_name = 'tracking_id'
                                  
                 if len(unexpected_names)>0:
                     #get here if unexpected_names is a NON-empty list!
-                    print("Unexpected domain names")
-                    print(' '.join(unexpected_names))
-                    print("Expected names are: "+' '.join(model_dimensions))
-                    print("Add a domain_names item to the [user] section of the config file")
-                    print("For example:")
-                    print("domain_names='long_name=Land and Vegetation Surface types:pseudo'")
+                    plog("Unexpected domain names")
+                    plog(' '.join(unexpected_names))
+                    plog("Expected names are: "+' '.join(model_dimensions))
+                    plog("Add a domain_names item to the [user] section of the config file")
+                    plog("For example:")
+                    plog("domain_names='long_name=Land and Vegetation Surface types:pseudo'")
                     exit()
                     import pdb; pdb.set_trace()
 
@@ -1669,11 +1669,11 @@ uuid_name = 'tracking_id'
                     this_time_domain=this_time_domain.split('_')[0]
                     if time_domain_cf == this_time_domain:
                         #time domains match
-                        print("Time and spatial domains match")
+                        plog("Time and spatial domains match")
                         um.nc_found.append([stash_code,time_domain_cf,spatial_domain_cf])
                         return(True)
         #if we get to here, there were no matches!
-        print("Couldn't find "+stash_code+" in NC for "+' '.join(spatial_domain_cf_list)+" at "+time_domain_cf)
+        plog("Couldn't find "+stash_code+" in NC for "+' '.join(spatial_domain_cf_list)+" at "+time_domain_cf)
         self.nc_missing.append([stash_code,time_domain_cf,spatial_domain_cf])
         #import pdb; pdb.set_trace()
 
@@ -1732,23 +1732,23 @@ uuid_name = 'tracking_id'
         
 
         if 'blev' in options:
-           print("BLEV")
+           plog("BLEV")
            blev_lc= options['blev'].lower()
            if blev_lc=='0.05':
               #this maps onto the first soil level
               blev_lc='sdepth1'
            if blev_lc in dims:
-                print(stash_code+" required "+  blev_lc +" - and this DOES exist in "+dims)
+                plog(stash_code+" required "+  blev_lc +" - and this DOES exist in "+dims)
            else:
-                print(stash_code+" required "+  blev_lc +" - but this DOES NOT exist in "+dims)
+                plog(stash_code+" required "+  blev_lc +" - but this DOES NOT exist in "+dims)
 
                 groups=re.match(r'.*?\s(plev.*?)\s.*?',dims)
                 if not groups:
-                   print("Not sure what to do now!")
+                   plog("Not sure what to do now!")
                    import pdb; pdb.set_trace()
 
                 else:
-                   print("However, the levels request is for "+groups[1]+" so we will continue with this")
+                   plog("However, the levels request is for "+groups[1]+" so we will continue with this")
                 
         
         
@@ -1765,8 +1765,8 @@ uuid_name = 'tracking_id'
 
                
         if model!="01":
-            print("Unknown model in stashcode?")
-            print(stash_code)
+            plog("Unknown model in stashcode?")
+            plog(stash_code)
             import pdb; pdb.set_trace()
 
 
@@ -1804,7 +1804,7 @@ uuid_name = 'tracking_id'
         #if the stash was found, it already exists, so we don't need to do anything - otherwise..
         if not stash_found:
             #stash code not found in rose with correct time and space domain:
-            print("Need to add stash code "+stash_code)
+            plog("Need to add stash code "+stash_code)
             
 
             #for USAGE - we will pick the FIRST usage in the list from use_matrix[time][space]
@@ -1813,7 +1813,7 @@ uuid_name = 'tracking_id'
             #   import pdb; pdb.set_trace()
 
             if not time_domain in self.use_matrix:
-                print(time_domain+" doesn't exist in the use matrix?")
+                plog(time_domain+" doesn't exist in the use matrix?")
                 #can we find this time domain in CMIP6?
                 import pdb; pdb.set_trace()
 
@@ -1834,7 +1834,7 @@ uuid_name = 'tracking_id'
                     #Can't assume that all STASH have "UPD" defined as ann output stream
                     #
 
-                    #print(oft)
+                    #plog(oft)
                     #logging.info(oft)
                 else:
                     #Ok, so no default usage and no spatial_domain entry in the use_matrux
@@ -1852,7 +1852,7 @@ uuid_name = 'tracking_id'
 
             plog("Will use "+usage+" as the usage")
 
-            #print(oft)
+            #plog(oft)
             #logging.info(oft)
             isec1=isec.lstrip('0') if isec!='00' else '0'
             item1=item.lstrip('0') if item!='000' else '0'
@@ -1953,19 +1953,19 @@ uuid_name = 'tracking_id'
                         spatial_domain="'DSOIL'"
                         plog("Converted space domain to 'DSOIL'")
                     else:
-                        print("Need DSOIL domain for this diagnostics, but not available???")
+                        plog("Need DSOIL domain for this diagnostics, but not available???")
                         import pdb; pdb.set_trace()
 
                         
                 else:
-                    print("Not sure what to do here!")
+                    plog("Not sure what to do here!")
                     import pdb; pdb.set_trace()
 
 
         if sc_pseudo_level!=0:
            #this field uses pseudo levels
            #which do we need?
-           print(stash_code+" requires pseudo levels")
+           plog(stash_code+" requires pseudo levels")
 
            
            rose_space_keys=[key for key in self.rose.keys() if 'umstash_domain' in key]
@@ -1987,18 +1987,18 @@ uuid_name = 'tracking_id'
                        pseudo_level_found=True
                        break
                     else:
-                       print("Found "+this_dom+" but the pseudolevel range "+str(pslist)+" does not match the defined range "+str(this_stash['PseudF'])+"-"+str(this_stash['PseudL'])+" for "+stash_code)
-                       print("If you want to use "+this_dom+" for "+stash_code+" add the line:\n"+stash_code+" = "+this_dom+"\nto "+main_config['user']['log_file'].strip("'")+" under a [domains] section")
+                       plog("Found "+this_dom+" but the pseudolevel range "+str(pslist)+" does not match the defined range "+str(this_stash['PseudF'])+"-"+str(this_stash['PseudL'])+" for "+stash_code)
+                       plog("If you want to use "+this_dom+" for "+stash_code+" add the line:\n"+stash_code+" = "+this_dom+"\nto "+main_config['user']['log_file'].strip("'")+" under a [domains] section")
                              
                     
            if pseudo_level_found:
               
-              print(this_dom+" in ROSE uses the correct pseudo level and model levels "+key)
+              plog(this_dom+" in ROSE uses the correct pseudo level and model levels "+key)
               plog("Using "+this_dom+" for "+stash_code)
               spatial_domain=this_dom
            else:
-              print("Pseudo level range not found in ROSE domains")
-              print("Checking CMIP reference")
+              plog("Pseudo level range not found in ROSE domains")
+              plog("Checking CMIP reference")
             
               cmip6_space_keys=[key for key in self.cmip6.keys() if 'umstash_domain' in key]
               
@@ -2021,21 +2021,21 @@ uuid_name = 'tracking_id'
                           pseudo_level_found=True
                           break
                        else:
-                          print("Found "+this_dom+" but the pseudolevel range "+str(pslist)+" does not match the defined range "+str(this_stash['PseudF'])+"-"+str(this_stash['PseudL'])+" for "+stash_code)
+                          plog("Found "+this_dom+" but the pseudolevel range "+str(pslist)+" does not match the defined range "+str(this_stash['PseudF'])+"-"+str(this_stash['PseudL'])+" for "+stash_code)
                     
                     break
 
               if pseudo_level_found:
-                 print("Pseudo level "+str(sc_pseudo_level)+" found in CMIP6 in "+key)
+                 plog("Pseudo level "+str(sc_pseudo_level)+" found in CMIP6 in "+key)
                  import pdb; pdb.set_trace()
               else:
-                 print("Pseudo level range  not found in CMIP6 Domains")
-                 print("Need to define a domain usage in "+main_config['user']['log_file'].strip("'")+" under a [domains] section")
+                 plog("Pseudo level range  not found in CMIP6 Domains")
+                 plog("Need to define a domain usage in "+main_config['user']['log_file'].strip("'")+" under a [domains] section")
                  exit()
         
         if model!="01":
-            print("Unknown model in stashcode?")
-            print(stash_code)
+            plog("Unknown model in stashcode?")
+            plog(stash_code)
             import pdb; pdb.set_trace()
 
 
@@ -2063,13 +2063,13 @@ uuid_name = 'tracking_id'
         #if the stash was found, it already exists, so we don't need to do anything - otherwise..
         if not stash_found:
             #stash code not found in rose with correct time and space domain:
-            print("Need to add stash code "+stash_code)
+            plog("Need to add stash code "+stash_code)
            
 
             #for USAGE - we will pick the FIRST usage in the list from use_matrix[time][space]
             #Does the time_domain exist in the use_matrix?
             if not time_domain in self.use_matrix:
-                print(time_domain+" doesn't exist in the use matrix?")
+                plog(time_domain+" doesn't exist in the use matrix?")
                 #can we find this time domain in CMIP6?
                 import pdb; pdb.set_trace()
 
@@ -2152,7 +2152,7 @@ uuid_name = 'tracking_id'
             with open(rose_outfile, 'w') as rose_out:
                 self.rose.write(rose_out)
             
-        print("Written "+rose_outfile)
+        plog("Written "+rose_outfile)
 
 
 
@@ -2192,7 +2192,7 @@ class CICE:
                 if not '&' in line:
                    namelist=False
              if 'icefields_nml' in line and 'namelist' in line:
-                print(line)
+                plog(line)
                 namelist=True
        return(cice_diagnostics)
 
@@ -2221,7 +2221,7 @@ class CICE:
 
 
     def nc_check_ice(self,fdiag,freq,dims):
-        print("Check Ice output")
+        plog("Check Ice output")
         #CICE doesn't have sea ice types, or classes, so remove this dimension
         if 'present' in fdiag:
             fdiag='f_ice_present'
@@ -2230,7 +2230,7 @@ class CICE:
         diag=fdiag.replace('f_','')
         matches=[key for key in nc_output if key.nc_get_variable()==diag]
         if matches:
-            print(diag+" found in NC output")
+            plog(diag+" found in NC output")
             #does this have the required domain?
             spatial_domain_cf_list=sorted(dims.split())
             ##HERE
@@ -2256,29 +2256,29 @@ class CICE:
                         match_freq=self.freq_map[match_freq]
                     if freq == match_freq:
                         #time domains match
-                        print("Time and spatial domains match")
+                        plog("Time and spatial domains match")
                         self.nc_found.append([diag,freq,dims])
                         return(True)
 
         else:
-            print(diag+" not found in NC output")
+            plog(diag+" not found in NC output")
 
-        print("Couldn't find "+diag+" in NC for "+dims+" at "+freq)
+        plog("Couldn't find "+diag+" in NC for "+dims+" at "+freq)
         self.nc_missing.append([diag,freq,dims])
         return(False)
     
     def addIceDiag(self,fdiag,freq,dims):
     
-        print("")
+        plog("")
 
-        print("-------------------------")
+        plog("-------------------------")
         #plog("Ice: "+diag)
         
 
         #check frequency is valid
         freq_map={'mon':"'m'",'day':"'d'",'hour':"'h'",'timestep':"'1'",'year':"'y'"}
         if not freq in freq_map:
-            print("unknown output frequency"+freq+' '+fdiag)
+            plog("unknown output frequency"+freq+' '+fdiag)
             import pdb; pdb.set_trace()
         this_freq=freq_map[freq]
 
@@ -2344,7 +2344,7 @@ class CICE:
 
                        break
                  if not found:
-                    print('no space for addditional CICE diag frequency!')
+                    plog('no space for addditional CICE diag frequency!')
                     import pdb; pdb.set_trace()
                  setup['histfreq']=','.join(histfreq)
                  setup['histfreq_n']=','.join(histfreq_n)
@@ -2373,15 +2373,15 @@ class CICE:
         freq=line['time']
         dims=line['space']
 
-        print("")
+        plog("")
 
-        print("-------------------------")
+        plog("-------------------------")
         #plog("Ice: "+diag)
 
         #check frequency is valid
         freq_map={'mon':"'m'",'day':"'d'",'hour':"'h'",'timestep':"'1'",'year':"'y'"}
         if not freq in freq_map:
-            print("unknown output frequency"+freq+' '+diag)
+            plog("unknown output frequency"+freq+' '+diag)
             import pdb; pdb.set_trace()
         this_freq=freq_map[freq]
 
@@ -2403,9 +2403,9 @@ class CICE:
            if len(matches)>0:
               #Aha - this IS a sea ice diagnostics, but the mapping files use atmosphere diagnostics to build in
               #So call the UM diagnostics function, and then return
-              print("We need to add UM diagnostics for this "+diag+" CICE diagnostic!")
+              plog("We need to add UM diagnostics for this "+diag+" CICE diagnostic!")
               um.add_cf_diagnostic(line)
-              print("Done")
+              plog("Done")
               return()
            else:
               if self.contains_operators(this_expression):
@@ -2418,10 +2418,10 @@ class CICE:
                  #split into a list of diagnostics
                  sub_diags=list(filter(None, sub_diag_string.split()))
                  if len(sub_diags)==0:
-                    print("something went wrong - mapping expression failed!")
+                    plog("something went wrong - mapping expression failed!")
                     import pdb; pdb.set_trace()
                  elif len(sub_diags)>1:
-                    print(diag+" maps to more than one ice diagnostic - loop over these")
+                    plog(diag+" maps to more than one ice diagnostic - loop over these")
                     for sub_diag in sub_diags:
                        #call this method again
                        #take a copy of line
@@ -2429,9 +2429,9 @@ class CICE:
                        #swap variable
                        new_line['variable']=sub_diag
                        #call addIceDiag again
-                       print("Adding "+sub_diag)
+                       plog("Adding "+sub_diag)
                        self.addIceDiag(new_line)                       
-                    print("Done")
+                    plog("Done")
                     return()
                  else:
                     fdiag='f_'+sub_diags[0]
@@ -2483,7 +2483,7 @@ class CICE:
                        found=True
                        break
                  if not found:
-                    print('no space for addditional CICE diag frequency!')
+                    plog('no space for addditional CICE diag frequency!')
                     import pdb; pdb.set_trace()
                  setup['histfreq']=','.join(histfreq)
                  setup['histfreq_n']=','.join(histfreq_n)
@@ -2512,9 +2512,9 @@ class CICE:
         freq=line['time']
         dims=line['space']
 
-        print("")
+        plog("")
 
-        print("-------------------------")
+        plog("-------------------------")
         #plog("Ice: "+diag)
         
 
@@ -2523,7 +2523,7 @@ class CICE:
 
         freq_map={'mon':"'m'",'day':"'d'",'hour':"'h'",'timestep':"'1'",'year':"'y'"}
         if not freq in freq_map:
-            print("unknown output frequency"+freq+' '+diag)
+            plog("unknown output frequency"+freq+' '+diag)
             import pdb; pdb.set_trace()
         this_freq=freq_map[freq]
         setup=self.rose['namelist:setup_nml']
@@ -2542,7 +2542,7 @@ class CICE:
                     found=True
                     break
             if not found:
-                print('no space for addditional CICE diag frequency!')
+                plog('no space for addditional CICE diag frequency!')
                 import pdb; pdb.set_trace()
             #write modified histfreq and histfreq_n back to ice
             setup['histfreq']=','.join(histfreq)
@@ -2588,7 +2588,7 @@ class CICE:
         with open(rose_outfile, 'a') as rose_out:
             self.rose.write(rose_out)
 
-        print("Written "+rose_outfile)
+        plog("Written "+rose_outfile)
 
 
         
@@ -2626,7 +2626,7 @@ class Nemo:
         xml_flag=True
         for nemo_field_def_file in nemo_field_def_files:
             if not os.path.isfile(nemo_field_def_file):
-                print(nemo_field_def_file+" does not exist")
+                plog(nemo_field_def_file+" does not exist")
                 exit()
             #loop over all files, appending to the first XML structure as we go
             if xml_flag:
@@ -2650,7 +2650,7 @@ class Nemo:
         root=self.nemo_diagnostic_request.getroot()
         files=root.findall(".//file")
         if len(files)==0:
-            print("XML has no file elements!")
+            plog("XML has no file elements!")
             import pdb; pdb.set_trace()
         for file in files:
             id_list.append(file.attrib['id'])
@@ -2666,7 +2666,7 @@ class Nemo:
         config.optionxform = lambda option: option
         configFilePath = file
         if not os.path.isfile(file):
-            print("ROSE conf file "+file+" does not exist")
+            plog("ROSE conf file "+file+" does not exist")
             exit()
            
         with open(configFilePath) as stream:
@@ -2687,15 +2687,15 @@ class Nemo:
         diag_keys=[key for key in self.rose.keys() if 'iodef_nemo.xml' in key]
         if len(diag_keys)>1:
             #too many matches!
-            print("too many matches?")
-            print(diag_keys)
+            plog("too many matches?")
+            plog(diag_keys)
             import pdb; pdb.set_trace()
         #extract link to actual diag file
         nemo_diagnostic_request_file=self.rose[diag_keys[0]]['source'].split('/')[-1]
         this_dir='/'.join(self.rose_conf_file.split('/')[0:-1])
         self.ocean_xml_filename=this_dir+'/file/'+nemo_diagnostic_request_file
         if not os.path.exists(self.ocean_xml_filename):
-            print(self.ocean_xml_filename+' does not exist?')
+            plog(self.ocean_xml_filename+' does not exist?')
             import pdb; pdb.set_trace()
         #read xml file
     
@@ -2724,7 +2724,7 @@ class Nemo:
 
     
     def nc_check_ocean(self,diag,freq,dims):
-        print("Check Ocean output")
+        plog("Check Ocean output")
 
         # Define the dictionary with the coordinate replacements
         replacements = {
@@ -2739,15 +2739,15 @@ class Nemo:
 
         
         if diag=='ficeberg' and 'olevel' in dims:
-            print("ficeberg is actually a 2d field - adjusting")
+            plog("ficeberg is actually a 2d field - adjusting")
             dims=dims.replace('olevel','')
         
         if diag=='vowflisf' and not 'olevel' in dims:
-            print("vowflisf is actually written out on ocean levels - adjusting")
+            plog("vowflisf is actually written out on ocean levels - adjusting")
             dims=dims+' olevel'
         matches=[key for key in nc_output if key.nc_get_variable()==diag]
         if matches:
-            print(diag+" found in NC output")
+            plog(diag+" found in NC output")
             #import pdb; pdb.set_trace()
             #does this have the required domain?
 
@@ -2780,14 +2780,14 @@ class Nemo:
                     match_freq=this_match.properties()['name'].split('_')[1]
                     if freq == match_freq:
                         #time domains match
-                        print("Time and spatial domains match")
+                        plog("Time and spatial domains match")
                         self.nc_found.append([diag,freq,dims])
                         return(True)
 
         else:
-            print(diag+" not found in NC output")
+            plog(diag+" not found in NC output")
 
-        print("Couldn't find "+diag+" in NC for "+dims+" at "+freq)
+        plog("Couldn't find "+diag+" in NC for "+dims+" at "+freq)
         self.nc_missing.append([diag,freq,dims])
         return(False)
 
@@ -2808,8 +2808,8 @@ class Nemo:
         this_name_suffix=self.get_name_suffix(diag)
         if this_name_suffix==None:
 
-            print("Couldn't find the name_suffix!")
-            print("Unable to add "+diag)
+            plog("Couldn't find the name_suffix!")
+            plog("Unable to add "+diag)
             self.missing.append(diag)
             #import pdb; pdb.set_trace()
             return()
@@ -2835,7 +2835,7 @@ class Nemo:
                 parent=field.getparent()
                 #does the parent output_freq equal our required frequency?
                 if not 'output_freq' in parent.attrib:
-                   print("!!")
+                   plog("!!")
                    import pdb; pdb.set_trace()
                    
                 if parent.attrib['output_freq']==this_freq:
@@ -2853,10 +2853,10 @@ class Nemo:
             #file_groups=root.findall(".//file_group[@output_freq='"+this_freq+"']")
             #if len(file_groups)==0:
             #    #no file group exists for this output freq! Not sure what to do now!
-            #    print("No file_group element exists in XML for output frequency "+freq)
+            #    plog("No file_group element exists in XML for output frequency "+freq)
             #    import pdb; pdb.set_trace()
             #if len(file_groups)>1:
-            #    print("Found more than one file_group for "+freq+" ???")
+            #    plog("Found more than one file_group for "+freq+" ???")
             #    import pdb; pdb.set_trace()
             #file_group=file_groups[0]
 
@@ -2888,7 +2888,7 @@ class Nemo:
                 plog("Adding "+diag+" to "+file_id)
                 new_file_element.append(deepcopy(field))
                 self.added.append(diag)
-                print("Done")
+                plog("Done")
                 return()
 
             #here - there are multiple files in this fille_group for the chosen output freq
@@ -2903,7 +2903,7 @@ class Nemo:
                     file.append(deepcopy(fields[0]))
                     return()
 
-            print("Couldn't find "+this_name_suffix+"in "+file_groups[0])
+            plog("Couldn't find "+this_name_suffix+"in "+file_groups[0])
             import pdb; pdb.set_trace()
 
        
@@ -2914,14 +2914,14 @@ class Nemo:
         freq=line['time']
         dims=line['space']
 
-        #print(+" "+freq)
+        #plog(+" "+freq)
 
         #diag = cf variable name
         #freq= output frequency mon,day etc
-        print("")
+        plog("")
 
-        print("-------------------------")
-        print("Ocean: "+diag)
+        plog("-------------------------")
+        plog("Ocean: "+diag)
 
         if diag=='areacello':
            #this is just the ocean grid cell area - not a model diagnostic
@@ -2935,7 +2935,7 @@ class Nemo:
         #it must be a cice diagnostic!
         if not diag in um.cf_to_stash and 'f_'+diag in cice_diagnostics:
            #YES!
-           print(diag+" is a CICE diagnostic - adding to CICE")
+           plog(diag+" is a CICE diagnostic - adding to CICE")
            cice.addIceDiag(line)
            return()
         
@@ -2948,7 +2948,7 @@ class Nemo:
               #need to break down the mapping expression and add each sub diagnostic in turn
               #these could be atmosphere(UM) diags or NEMO diags or even CICE diags!
               plog(diag+" is mapped in the cf mappings")
-              print(cf_mapping_expression)
+              plog(cf_mapping_expression)
 
               self.add_diags_in_mapping(cf_mapping_expression,line)
               return()
@@ -2968,7 +2968,7 @@ class Nemo:
               sub_diag_string=cf_mapping_expression2.translate(translation_table)
               #split this into a list of nemo diagnostics, excluding empty strings
               nemo_diags=[x for x in sub_diag_string.split(' ') if x !='']
-              print("------------")
+              plog("------------")
               pattern = re.compile('[^a-z_]+')
 
               nemo_diags_all=[]
@@ -2995,7 +2995,7 @@ class Nemo:
                  #The mapping file just points back to the diag!
                  #something lime mask_copy(tauuo, mask_2D_U)
                  #we don't care about the masking here - just need to output the correct diagnostics
-                 print("Mapping just points back to this diagnostics, so don't need to worry about this")
+                 plog("Mapping just points back to this diagnostics, so don't need to worry about this")
                  import pdb; pdb.set_trace()
                  #UMO why doesn't that work?
               else:
@@ -3016,7 +3016,7 @@ class Nemo:
                     
                        self.addOceanDiag(this_line)
                  if not diag_in_mapping:      
-                    print("All added")
+                    plog("All added")
                     return()
                  #we still need to add the original diag - so carry on a do that
                  #import pdb; pdb.set_trace()
@@ -3030,8 +3030,8 @@ class Nemo:
            this_name_suffix=self.get_name_suffix(diag)
            if this_name_suffix==None:
 
-               print("Couldn't find the name_suffix!")
-               print("Unable to add "+diag)
+               plog("Couldn't find the name_suffix!")
+               plog("Unable to add "+diag)
                self.missing.append(diag)
                #import pdb; pdb.set_trace()
                return()
@@ -3068,10 +3068,10 @@ class Nemo:
                #file_groups=root.findall(".//file_group[@output_freq='"+this_freq+"']")
                #if len(file_groups)==0:
                #    #no file group exists for this output freq! Not sure what to do now!
-               #    print("No file_group element exists in XML for output frequency "+freq)
+               #    plog("No file_group element exists in XML for output frequency "+freq)
                #    import pdb; pdb.set_trace()
                #if len(file_groups)>1:
-               #    print("Found more than one file_group for "+freq+" ???")
+               #    plog("Found more than one file_group for "+freq+" ???")
                #    import pdb; pdb.set_trace()
                #file_group=file_groups[0]
 
@@ -3103,7 +3103,7 @@ class Nemo:
                    plog("Adding "+diag+" to "+file_id)
                    new_file_element.append(deepcopy(field))
                    self.added.append(diag)
-                   print("Done")
+                   plog("Done")
                    return()
 
                #here - there are multiple files in this fille_group for the chosen output freq
@@ -3118,7 +3118,7 @@ class Nemo:
                        file.append(deepcopy(fields[0]))
                        return()
 
-               print("Couldn't find "+this_name_suffix+"in "+file_groups[0])
+               plog("Couldn't find "+this_name_suffix+"in "+file_groups[0])
                import pdb; pdb.set_trace()
 
 
@@ -3154,14 +3154,14 @@ class Nemo:
         freq=line['time']
         dims=line['space']
 
-        #print(+" "+freq)
+        #plog(+" "+freq)
 
         #diag = cf variable name
         #freq= output frequency mon,day etc
-        print("")
+        plog("")
 
-        print("-------------------------")
-        print("Ocean: "+diag)
+        plog("-------------------------")
+        plog("Ocean: "+diag)
 
         if diag=='areacello':
            #this is just the ocean grid cell area - not a model diagnostic
@@ -3175,7 +3175,7 @@ class Nemo:
         #it must be a cice diagnostic!
         if not diag in um.cf_to_stash and 'f_'+diag in cice_diagnostics:
            #YES!
-           print(diag+" is a CICE diagnostic - adding to CICE")
+           plog(diag+" is a CICE diagnostic - adding to CICE")
            cice.addIceDiag(line)
            return()
         
@@ -3186,7 +3186,7 @@ class Nemo:
            if not cf_mapping_expression==diag:
               #the mapping expression is not just the diag name
               plog(diag+" is mapped in the cf mappings")
-              print(cf_mapping_expression)
+              plog(cf_mapping_expression)
               #check to see if this is really a UM stash diagnostic!
               pattern_s = r'm\d{2}s\d{2}i\d{3}\[.*?\]'
               matches = re.findall(pattern_s, cf_mapping_expression)
@@ -3209,7 +3209,7 @@ class Nemo:
               sub_diag_string=cf_mapping_expression2.translate(translation_table)
               #split this into a list of nemo diagnostics, excluding empty strings
               nemo_diags=[x for x in sub_diag_string.split(' ') if x !='']
-              print("------------")
+              plog("------------")
               pattern = re.compile('[^a-z_]+')
 
               nemo_diags_all=[]
@@ -3236,7 +3236,7 @@ class Nemo:
                  #The mapping file just points back to the diag!
                  #something lime mask_copy(tauuo, mask_2D_U)
                  #we don't care about the masking here - just need to output the correct diagnostics
-                 print("Mapping just points back to this diagnostics, so don't need to worry about this")
+                 plog("Mapping just points back to this diagnostics, so don't need to worry about this")
                  import pdb; pdb.set_trace()
                  #UMO why doesn't that work?
               else:
@@ -3257,7 +3257,7 @@ class Nemo:
                     
                        self.addOceanDiag(this_line)
                  if not diag_in_mapping:      
-                    print("All added")
+                    plog("All added")
                     return()
                  #we still need to add the original diag - so carry on a do that
                  #import pdb; pdb.set_trace()
@@ -3269,8 +3269,8 @@ class Nemo:
         this_name_suffix=self.get_name_suffix(diag)
         if this_name_suffix==None:
             
-            print("Couldn't find the name_suffix!")
-            print("Unable to add "+diag)
+            plog("Couldn't find the name_suffix!")
+            plog("Unable to add "+diag)
             self.missing.append(diag)
             #import pdb; pdb.set_trace()
             return()
@@ -3307,10 +3307,10 @@ class Nemo:
             #file_groups=root.findall(".//file_group[@output_freq='"+this_freq+"']")
             #if len(file_groups)==0:
             #    #no file group exists for this output freq! Not sure what to do now!
-            #    print("No file_group element exists in XML for output frequency "+freq)
+            #    plog("No file_group element exists in XML for output frequency "+freq)
             #    import pdb; pdb.set_trace()
             #if len(file_groups)>1:
-            #    print("Found more than one file_group for "+freq+" ???")
+            #    plog("Found more than one file_group for "+freq+" ???")
             #    import pdb; pdb.set_trace()
             #file_group=file_groups[0]
 
@@ -3342,7 +3342,7 @@ class Nemo:
                 plog("Adding "+diag+" to "+file_id)
                 new_file_element.append(deepcopy(field))
                 self.added.append(diag)
-                print("Done")
+                plog("Done")
                 return()
 
             #here - there are multiple files in this fille_group for the chosen output freq
@@ -3357,7 +3357,7 @@ class Nemo:
                     file.append(deepcopy(fields[0]))
                     return()
 
-            print("Couldn't find "+this_name_suffix+"in "+file_groups[0])
+            plog("Couldn't find "+this_name_suffix+"in "+file_groups[0])
             import pdb; pdb.set_trace()
 
     def get_name_suffix(self,diag):
@@ -3377,17 +3377,17 @@ class Nemo:
                 #loop over extra nemo fields added in main_config
                 for i in [key for key in main_config if 'nemo_field' in key]:
                    if diag in i:
-                      print("Mapping for "+diag+" found in config!")
+                      plog("Mapping for "+diag+" found in config!")
                       this_nemo_field_ref=main_config[i]['field_ref']
                       this_nemo_file=main_config[i]['nemo_file']
-                      print("Adding "+this_nemo_field_ref+" to the nemo "+this_nemo_file+" file stream")
+                      plog("Adding "+this_nemo_field_ref+" to the nemo "+this_nemo_file+" file stream")
                       ##Can we add this directly? But really need to make new mapping..?
                       
                       import pdb; pdb.set_trace()
                       
 
                 #does this
-                print("You might have to add this by hand to "+self.nemo_diagnostic_request_filename)
+                plog("You might have to add this by hand to "+self.nemo_diagnostic_request_filename)
                 self.missing.append(diag)
                 return(None)
 
@@ -3398,11 +3398,11 @@ class Nemo:
             #find the diagnostics with this field id
             diags=self.nemo_full_diagnostics.findall(".//field[@id='"+field_ref+"']")
             if len(diags)==0:
-                print("No diags found with field_ref "+field_ref)
+                plog("No diags found with field_ref "+field_ref)
                 import pdb; pdb.set_trace()
 
             if len(diags)>1:
-                print("Multiple matching ids!")
+                plog("Multiple matching ids!")
                 plog("***WARNING - Multple Matching NEMO ids! ***")
                 for d in diags:
                     plog(d.attrib)
@@ -3421,8 +3421,8 @@ class Nemo:
                 return('_scalar')
             #must be grid_X_YD?
             if not '_' in grid_ref:
-                print("Not sure what grid we have here!")
-                print(grid_ref)
+                plog("Not sure what grid we have here!")
+                plog(grid_ref)
                 import pdb; pdb.set_trace()
             #return truncated grid ref (removing _2D or _3D)
             return('_'+grid_ref[:-3])
@@ -3439,14 +3439,14 @@ class Nemo:
         #find the parent
         parent=fields[0].getparent()
         if parent==None:
-            print("No Parent!!")
+            plog("No Parent!!")
             import pdb; pdb.set_trace()
         #we will assume the name_suffix is what we need here! '_grid_T' '_grid_U' '_grid_V' '_diaptr'
         if 'name_suffix' in parent.attrib:
             grid=parent.attrib['name_suffix']
             return(grid)
         else:
-            print('No name_suffix attribute in the parent!')
+            plog('No name_suffix attribute in the parent!')
             import pdb; pdb.set_trace()
 
 
@@ -3467,10 +3467,10 @@ class Nemo:
         #find the diagnostics with this field id
         diags=self.nemo_full_diagnostics.findall(".//field[@id='"+field_ref+"']")
         if len(diags)==0:
-            print("No diags found with field_ref "+field_ref)
+            plog("No diags found with field_ref "+field_ref)
             import pdb; pdb.set_trace()
         if len(diags)>1:
-            print("Multiple matching ids!")
+            plog("Multiple matching ids!")
             plog("***WARNING - Multple Matching NEMO ids! ***")
             for d in diags:
                 plog(d.attrib)
@@ -3530,7 +3530,7 @@ class Nemo:
                 #copy attributes and text  from file element that matches name_suffix
                 match_files=root.findall(".//file[@name_suffix='"+name_suffix+"']")
                 if len(match_files)==0:
-                    print("No file elemnts found with a matching name suffix! ")
+                    plog("No file elemnts found with a matching name suffix! ")
                     import pdb; pdb.set_trace()
                 new_attrib=dict(match_files[0].attrib)
 
@@ -3541,7 +3541,7 @@ class Nemo:
                     if self.freq_map[key]==this_freq:
                         freq=key
                 if freq==None:
-                    print("Freq mapping not found for "+this_freq)
+                    plog("Freq mapping not found for "+this_freq)
                     import pdb; pdb.set_trace()
 
                 #freq=
@@ -3561,7 +3561,7 @@ class Nemo:
                 plog("Adding "+diag+" to "+file_id)
                 new_file_element.append(deepcopy(field))
                 self.added.append(diag)
-                print("Done")
+                plog("Done")
                 return()
         #here - there are multiple files in this file_group for the chosen output freq
         #we need to check to see if one matches the grid (or name_suffix) of the requested diagnostic
@@ -3578,8 +3578,8 @@ class Nemo:
                 return()
 
         
-        print("Couldn't find "+name_suffix+" in "+file_group.attrib['id'])
-        print("Adding a new file section for "+name_suffix+" in "+file_group.attrib['id'])
+        plog("Couldn't find "+name_suffix+" in "+file_group.attrib['id'])
+        plog("Adding a new file section for "+name_suffix+" in "+file_group.attrib['id'])
         #need to create a NEW file section with this new suffix
         #take a copy of the first file as a template
         ##new_file=deepcopy(files[0])
@@ -3607,10 +3607,10 @@ class Nemo:
         file_groups=root.findall(".//file_group[@output_freq='"+this_freq+"']")
         if len(file_groups)==0:
             #no file group exists for this output freq! Not sure what to do now!
-            print("No file_group element exists in XML for output frequency "+this_freq)
+            plog("No file_group element exists in XML for output frequency "+this_freq)
             import pdb; pdb.set_trace()
         if len(file_groups)>1:
-            print("Found more than one file_group for "+this_freq+" ???")
+            plog("Found more than one file_group for "+this_freq+" ???")
             import pdb; pdb.set_trace()
         file_group=file_groups[0]
         return(file_group)
@@ -3630,7 +3630,7 @@ class Nemo:
 
     def write(self,output_file):
         self.nemo_diagnostic_request.write(output_file)
-        print("Written "+output_file)
+        plog("Written "+output_file)
 
     
     pass
@@ -3665,7 +3665,7 @@ def read_cf_diagnostics():
     cf_diagnostics_file=main_config['user']['cf_diagnostics_file']
 
     if not os.path.isfile(cf_diagnostics_file):
-        print("CF Diagnostics CSV file "+cf_diagnostics_file+" does not exist")
+        plog("CF Diagnostics CSV file "+cf_diagnostics_file+" does not exist")
         exit()
 
     # Open the CSV cf_diagnostics file
@@ -3680,7 +3680,7 @@ def read_cf_diagnostics():
 
 def read_config(conf_file):
     if not os.path.isfile(conf_file):
-        print("Config file "+conf_file+" dos not exist")
+        plog("Config file "+conf_file+" dos not exist")
         exit()
 
     main_config = configparser.ConfigParser()   
@@ -3696,7 +3696,7 @@ def start_logging():
         log_file='cf_to_um.log'    
     #logging.basicConfig(filename=log_file, encoding='utf-8', level=logging.INFO, filemode='w')
     logging.basicConfig(filename=log_file, level=logging.INFO, filemode='w')
-    print("Writing log to "+log_file)
+    plog("Writing log to "+log_file)
 
 def check_stash_eq(um,nemo):
     #checks that the stash entries in um.rose and nemo.rose are identical!¬
@@ -3707,7 +3707,7 @@ def check_stash_eq(um,nemo):
 
 
 def plog(message):
-    print(message)
+    plog(message)
     logging.info(message)
     
 
@@ -3721,7 +3721,7 @@ def check_histfreq_issues():
     histfreq_found=False
     suite_file=main_config['user']['job_path']+'rose-suite.conf'
     if not os.path.isfile(suite_file):
-        print("rose-suite.conf does not exist!")
+        plog("rose-suite.conf does not exist!")
         import pdb; pdb.set_trace()
     rose_suite,header=um.read_rose_app_conf(suite_file)
     if 'UM_OPT_KEYS' in rose_suite['jinja2:suite.rc']:
@@ -3732,20 +3732,20 @@ def check_histfreq_issues():
                 conf_file=glob.glob(opt_dir+'/rose-app-'+um_opt_key+'.conf')
                 if conf_file:
                     if len(conf_file)>1:
-                        print("More than one conf file??")
+                        plog("More than one conf file??")
                         import pdb; pdb.set_trace()
 
-                    #print(conf_file)
+                    #plog(conf_file)
                     with open(conf_file[0]) as file:
                         for line in file:
                             if 'histfreq' in line:
-                                print(conf_file[0]+" contains the line "+line)
+                                plog(conf_file[0]+" contains the line "+line)
                                 histfreq_found=True
 
 
     if histfreq_found:
-        print("These lines will cause problems with adding CICE variables correctly and should be removed")
-        print("opt files thatcontain histfreq or histfreq_n these will override attempts by nemo_cice/rose-app.conf to set these and may cause errors in writing CICE data")
+        plog("These lines will cause problems with adding CICE variables correctly and should be removed")
+        plog("opt files thatcontain histfreq or histfreq_n these will override attempts by nemo_cice/rose-app.conf to set these and may cause errors in writing CICE data")
         exit()
 
     
@@ -3772,7 +3772,7 @@ else:
 #this option allows use to check the netcdf/pp output 
 check_output=False
 if args.check_output:
-    print("Checking NC output..")
+    plog("Checking NC output..")
     import cf
     nc_output=cf.read(args.check_output+"/*nc")
     check_output=True
@@ -3789,7 +3789,7 @@ main_config=read_config(conf_file)
 start_logging()
 #Now rose should have all the required time and space domains defined as in the freq_mappings and space_mappings
 plog("Adding to the "+bold(stash_type)+" STASH, Nemo and CICE diagnostics")
-print("------------")
+plog("------------")
 
 #read in cf mappings
 cf_mappings=read_cf_mappings()
@@ -3818,7 +3818,7 @@ if not check_output:
 
 
 
-print("----------------------------")
+plog("----------------------------")
 #loop over all cf variables
 
 #UM has multiple realms
@@ -3835,67 +3835,67 @@ for line in variable_list:
 #    #if realm in um_realms:
 #    if any(element in um_realms for element in realm.split(' ')):
 #        #all realms here use STASH
-#        print(".")
+#        plog(".")
 #        um.add_cf_diagnostic(line)
 #    elif 'ocean' in realm:
 #        #add ocean diagnostic
 #        nemo.addOceanDiag(line)
-#        #print()
+#        #plog()
 #    elif 'seaIce' in realm:
 #        #add Sea Ice diagnostic
 #        cice.addIceDiag(line)
-#        #print()
+#        #plog()
 #    else:
-#        print("Unknown Realm?")
-#        print(line['realm'])
+#        plog("Unknown Realm?")
+#        plog(line['realm'])
 #        import pdb; pdb.set_trace()
 
 if check_output:
-    print("")
-    print("")
+    plog("")
+    plog("")
     if um.nc_found:
-        print("The following STASH diagnostics were found in the output")
+        plog("The following STASH diagnostics were found in the output")
         for i in um.nc_found:
-            print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
-        print("--------------------------")
+            plog(f'{i[0]:10}  {i[1]} [{i[2]}] ')
+        plog("--------------------------")
         
     if nemo.nc_found:
-        print("The following NEMO diagnostics were found in the output")
+        plog("The following NEMO diagnostics were found in the output")
         for i in nemo.nc_found:
-            print(f'{i[0]:20}  {i[1]} [{i[2]}] ')
-        print("--------------------------")
+            plog(f'{i[0]:20}  {i[1]} [{i[2]}] ')
+        plog("--------------------------")
 
     if cice.nc_found:
-        print("The following CICE diagnostics were found in the output")
+        plog("The following CICE diagnostics were found in the output")
         for i in cice.nc_found:
-            print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
-        print("--------------------------")
+            plog(f'{i[0]:10}  {i[1]} [{i[2]}] ')
+        plog("--------------------------")
 
-    print("")
+    plog("")
             
     if um.nc_missing:
-        print("The following STASH diagnostics are "+color.BOLD+" missing"+color.END+" from the output")
+        plog("The following STASH diagnostics are "+color.BOLD+" missing"+color.END+" from the output")
         for i in um.nc_missing:
-            print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
-        print("--------------------------")
+            plog(f'{i[0]:10}  {i[1]} [{i[2]}] ')
+        plog("--------------------------")
     else:
-        print("There were no missing STASH diagnostics")
+        plog("There were no missing STASH diagnostics")
 
     if nemo.nc_missing:
-        print("The following NEMO diagnostics are "+color.BOLD+" missing"+color.END+" from the output")
+        plog("The following NEMO diagnostics are "+color.BOLD+" missing"+color.END+" from the output")
         for i in nemo.nc_missing:
-            print(f'{i[0]:20}  {i[1]} [{i[2]}] ')
-        print("--------------------------")
+            plog(f'{i[0]:20}  {i[1]} [{i[2]}] ')
+        plog("--------------------------")
     else:
-        print("There were no missing NEMO diagnostics")
+        plog("There were no missing NEMO diagnostics")
 
     if cice.nc_missing:
-        print("The following CICE diagnostics are "+color.BOLD+" missing"+color.END+" from the output")
+        plog("The following CICE diagnostics are "+color.BOLD+" missing"+color.END+" from the output")
         for i in cice.nc_missing:
-            print(f'{i[0]:10}  {i[1]} [{i[2]}] ')
-        print("--------------------------")
+            plog(f'{i[0]:10}  {i[1]} [{i[2]}] ')
+        plog("--------------------------")
     else:
-        print("There were no missing CICE diagnostics")
+        plog("There were no missing CICE diagnostics")
 
     exit()        
 
@@ -3911,7 +3911,7 @@ cice.added.sort()
 plog(bold("UM diagnostics unable to add: "+' '.join(um.missing)))
 plog(bold("Nemo diagnostics unable to add: "+' '.join(nemo.missing)))
 plog(bold("CICE diagnostics unable to add: "+' '.join(cice.missing)))
-print("----------------------")
+plog("----------------------")
 
 
 #write diagnostics definition files
