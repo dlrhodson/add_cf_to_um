@@ -1587,7 +1587,8 @@ uuid_name = 'tracking_id'
                           'alevel':'model_level_number',
                           'sdepth1':'depth',                          
                           'sdepth':'depth',
-                          'typesi':''
+                          'typesi':'',
+                          'typeli':''
                           }
             model_dimensions=['latitude','longitude','depth','model_level_number','height','time','pseudo']
  #           output_replacements={'atmosphere_hybrid_height_coordinate':'model_level_number',
