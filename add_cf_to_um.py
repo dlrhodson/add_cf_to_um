@@ -3724,8 +3724,16 @@ def check_histfreq_issues():
         plog("rose-suite.conf does not exist!")
         import pdb; pdb.set_trace()
     rose_suite,header=um.read_rose_app_conf(suite_file)
-    if 'UM_OPT_KEYS' in rose_suite['jinja2:suite.rc']:
-        um_opt_keys=rose_suite['jinja2:suite.rc']['UM_OPT_KEYS'].strip("'").split()
+    if 'jinja2:suite.rc' in rose_suite:
+        jinja_key='jinja2:suite.rc'
+    elif 'template variables' in rose_suite:
+        jinja_key='template variables'
+    else:
+        print("Unknown jinja key?")
+        import pdb; pdb.set_trace()
+
+    if 'UM_OPT_KEYS' in rose_suite[jinja_key]:
+        um_opt_keys=rose_suite[jinja_key]['UM_OPT_KEYS'].strip("'").split()
         opt_dirs=glob.glob(main_config['user']['job_path']+'app/*/opt')
         for um_opt_key in um_opt_keys:
             for opt_dir in opt_dirs:
